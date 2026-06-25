@@ -1,7 +1,15 @@
 from fastapi import FastAPI
+from app.routes.test import router as test_router
 
-app = FastAPI()
+app = FastAPI(
+    title="Enterprise Risk Intelligence & Decision Support System",
+    version="1.0.0"
+)
+
+app.include_router(test_router)
 
 @app.get("/")
-def home():
-    return {"message": "Backend is Running!"}
+def root():
+    return {
+        "message": "Welcome to ERIDSS API"
+    }
