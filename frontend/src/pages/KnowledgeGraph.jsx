@@ -1,5 +1,10 @@
 function KnowledgeGraph() {
-  return <h2>Knowledge Graph Module</h2>;
+  return (
+    <>
+      <h1>Knowledge Graph</h1>
+      <p>Visualize entity relationships.</p>
+    </>
+  );
 }
 
 export default KnowledgeGraph;

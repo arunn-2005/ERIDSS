@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 function Sidebar() {
   return (
     <div
@@ -13,11 +15,47 @@ function Sidebar() {
 
       <hr />
 
-      <p>📊 Dashboard</p>
-      <p>📄 Documents</p>
-      <p>🕸 Knowledge Graph</p>
-      <p>⚠ Risk Analysis</p>
-      <p>⚙ Settings</p>
+      <p>
+        <Link to="/" style={{ color: "white", textDecoration: "none" }}>
+          📊 Dashboard
+        </Link>
+      </p>
+
+      <p>
+        <Link
+          to="/documents"
+          style={{ color: "white", textDecoration: "none" }}
+        >
+          📄 Documents
+        </Link>
+      </p>
+
+      <p>
+        <Link
+          to="/knowledge-graph"
+          style={{ color: "white", textDecoration: "none" }}
+        >
+          🕸 Knowledge Graph
+        </Link>
+      </p>
+
+      <p>
+        <Link
+          to="/risk-analysis"
+          style={{ color: "white", textDecoration: "none" }}
+        >
+          ⚠ Risk Analysis
+        </Link>
+      </p>
+
+      <p>
+        <Link
+          to="/settings"
+          style={{ color: "white", textDecoration: "none" }}
+        >
+          ⚙ Settings
+        </Link>
+      </p>
     </div>
   );
 }
