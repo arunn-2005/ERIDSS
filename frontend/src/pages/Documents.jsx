@@ -1,9 +1,15 @@
+import DocumentUpload from "../components/DocumentUpload";
+import DocumentTable from "../components/DocumentTable";
+
 function Documents() {
   return (
-    <>
+    <div>
       <h1>Documents</h1>
-      <p>Upload and manage enterprise documents.</p>
-    </>
+
+      <DocumentUpload />
+
+      <DocumentTable />
+    </div>
   );
 }
 
