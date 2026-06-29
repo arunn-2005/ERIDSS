@@ -15,6 +15,38 @@ router = APIRouter(
 @router.post("/register", response_model=UserResponse)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
+    existing_username = (
+            db.query(User)
+            .filter(User.username == user.username)
+            .first()
+    )
+    
+    if existing_username:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Username already exists"
+        )
+    
+    existing_email = (
+        db.query(User)
+        .filter(User.email == user.email)
+        .first()
+    )
+
+    if existing_email:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered."
+        )
+    
+    password_validation = validate_password_strength(user.password)
+
+    if password_validation:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=password_validation
+        )
+
     db_user = User(
         username=user.username,
         email=user.email,
