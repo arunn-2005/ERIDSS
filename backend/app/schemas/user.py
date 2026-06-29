@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr
-
+from typing import Optional
 
 # Base Schema
 class UserBase(BaseModel):
@@ -23,3 +23,11 @@ class UserResponse(UserBase):
 
     class Config:
         from_attributes = True
+
+class UserUpdateRequest(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
