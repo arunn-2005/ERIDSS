@@ -16,7 +16,7 @@ function Sidebar() {
       <hr />
 
       <p>
-        <Link to="/" style={{ color: "white", textDecoration: "none" }}>
+        <Link to="/dashboard" style={{ color: "white", textDecoration: "none" }}>
           📊 Dashboard
         </Link>
       </p>

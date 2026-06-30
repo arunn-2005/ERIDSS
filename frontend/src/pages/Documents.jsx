@@ -1,5 +1,5 @@
-import DocumentUpload from "../components/DocumentUpload";
-import DocumentTable from "../components/DocumentTable";
+import DocumentUpload from "../components/Documents/DocumentUpload";
+import DocumentTable from "../components/Documents/DocumentTable";
 
 function Documents() {
   return (
