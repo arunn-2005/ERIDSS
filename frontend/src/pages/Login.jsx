@@ -10,7 +10,11 @@ function Login() {
     password: "",
   });
 
+  const [errorMessage, setErrorMessage] = useState("");
+
   const handleChange = (e) => {
+    setErrorMessage(""); // Clear error while typing
+
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -20,17 +24,20 @@ function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
+    setErrorMessage("");
+
     try {
       const response = await loginUser(formData);
-
-      // Save JWT
       localStorage.setItem("access_token", response.access_token);
-
-      alert("Login Successful!");
-
       navigate("/dashboard");
+
     } catch (error) {
-      alert("Invalid Email or Password");
+      if (error.response) {
+        setErrorMessage("Invalid Email or Password");
+      } else {
+        setErrorMessage("Something went wrong. Please try again.");
+      }
+
       console.error(error);
     }
   };
@@ -59,6 +66,12 @@ function Login() {
         />
 
         <br /><br />
+
+        {errorMessage && (
+          <p style={{ color: "red", marginBottom: "15px" }}>
+            {errorMessage}
+          </p>
+        )}
 
         <button type="submit">
           Login

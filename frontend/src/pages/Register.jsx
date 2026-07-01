@@ -12,7 +12,11 @@ function Register() {
     confirm_password: "",
   });
 
+  const [error, setError] = useState("");
+
   const handleChange = (e) => {
+    setError("");
+
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -22,8 +26,10 @@ function Register() {
   const handleRegister = async (e) => {
     e.preventDefault();
 
+    setError("");
+
     if (formData.password !== formData.confirm_password) {
-      alert("Passwords do not match");
+      setError("Passwords do not match");
       return;
     }
 
@@ -33,14 +39,16 @@ function Register() {
         email: formData.email,
         password: formData.password,
       });
-
-      alert("Registration Successful!");
-
       navigate("/login");
 
-    } catch (error) {
-      alert("Registration Failed");
-      console.error(error);
+    } catch (err) {
+      if (err.response && err.response.data) {
+        setError(err.response.data.detail);
+      } else {
+        setError("Registration failed. Please try again.");
+      }
+
+      console.error(err);
     }
   };
 
@@ -57,7 +65,6 @@ function Register() {
           value={formData.username}
           onChange={handleChange}
         />
-
         <br /><br />
 
         <input
@@ -67,7 +74,6 @@ function Register() {
           value={formData.email}
           onChange={handleChange}
         />
-
         <br /><br />
 
         <input
@@ -77,7 +83,6 @@ function Register() {
           value={formData.password}
           onChange={handleChange}
         />
-
         <br /><br />
 
         <input
@@ -87,13 +92,17 @@ function Register() {
           value={formData.confirm_password}
           onChange={handleChange}
         />
-
         <br /><br />
+
+        {error && (
+          <p style={{ color: "red", fontWeight: "bold" }}>
+            {error}
+          </p>
+        )}
 
         <button type="submit">
           Register
         </button>
-
       </form>
 
       <br />

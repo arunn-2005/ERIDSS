@@ -1,5 +1,3 @@
-import "./App.css";
-
 import Sidebar from "./components/Sidebar";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -9,7 +7,7 @@ import KnowledgeGraph from "./pages/KnowledgeGraph";
 import RiskAnalysis from "./pages/RiskAnalysis";
 import Settings from "./pages/Settings";
 
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
 function App() {
   const location = useLocation();
@@ -21,22 +19,28 @@ function App() {
     location.pathname === "/register";
 
   return (
-    <div className="app-container">
-      {!hideSidebar && <Sidebar />}
+    <div style={{ display: "flex" }}>
+      <Sidebar />
 
-      <main className="main-content">
+      <div style={{ flex: 1, padding: "20px" }}>
         <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+    <Route path="/" element={<Login />} />
 
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/documents" element={<Documents />} />
-          <Route path="/knowledge-graph" element={<KnowledgeGraph />} />
-          <Route path="/risk-analysis" element={<RiskAnalysis />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
-      </main>
+    <Route path="/login" element={<Login />} />
+
+    <Route path="/register" element={<Register />} />
+
+    <Route path="/dashboard" element={<Dashboard />} />
+
+    <Route path="/documents" element={<Documents />} />
+
+    <Route path="/knowledge-graph" element={<KnowledgeGraph />} />
+
+    <Route path="/risk-analysis" element={<RiskAnalysis />} />
+
+    <Route path="/settings" element={<Settings />} />
+</Routes>
+      </div>
     </div>
   );
 }
