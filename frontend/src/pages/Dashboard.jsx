@@ -1,51 +1,84 @@
+import { useNavigate } from "react-router-dom";
+import "../styles/Dashboard.css";
+
 function Dashboard() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    navigate("/"); // Redirects to Login page
+  };
+
   return (
-    <div>
-      <h1>ERIDSS Dashboard</h1>
+    <div className="dashboard">
 
-      <div
-        style={{
-          display: "flex",
-          gap: "20px",
-          marginTop: "30px",
-        }}
-      >
-        <div
-          style={{
-            border: "1px solid #ccc",
-            padding: "20px",
-            borderRadius: "10px",
-            width: "200px",
-          }}
-        >
-          <h3>Documents</h3>
-          <p>0 Uploaded</p>
+      <div className="dashboard-header">
+        <div>
+          <h1>Enterprise Risk Dashboard</h1>
+          <p>
+            Monitor document processing, knowledge graph generation and risk
+            intelligence from a single workspace.
+          </p>
         </div>
 
-        <div
-          style={{
-            border: "1px solid #ccc",
-            padding: "20px",
-            borderRadius: "10px",
-            width: "200px",
-          }}
-        >
-          <h3>Entities</h3>
-          <p>0 Extracted</p>
-        </div>
+        <div className="header-actions">
+          <button className="upload-btn">
+            + Upload Documents
+          </button>
 
-        <div
-          style={{
-            border: "1px solid #ccc",
-            padding: "20px",
-            borderRadius: "10px",
-            width: "200px",
-          }}
-        >
-          <h3>Risks</h3>
-          <p>0 Detected</p>
+          <button className="logout-btn" onClick={handleLogout}>
+            Logout
+          </button>
         </div>
       </div>
+
+      <div className="stats-grid">
+
+        <div className="stat-card">
+          <span className="stat-title">Documents</span>
+          <h2>0</h2>
+          <p>Uploaded Documents</p>
+        </div>
+
+        <div className="stat-card">
+          <span className="stat-title">Entities</span>
+          <h2>0</h2>
+          <p>Entities Extracted</p>
+        </div>
+
+        <div className="stat-card">
+          <span className="stat-title">Relationships</span>
+          <h2>0</h2>
+          <p>Graph Connections</p>
+        </div>
+
+        <div className="stat-card">
+          <span className="stat-title">Risk Alerts</span>
+          <h2>0</h2>
+          <p>Detected Risks</p>
+        </div>
+
+      </div>
+
+      <div className="dashboard-content">
+
+        <div className="panel large-panel">
+          <h3>Recent Activity</h3>
+
+          <div className="empty-state">
+            No documents processed yet.
+          </div>
+        </div>
+
+        <div className="panel">
+          <h3>Knowledge Graph</h3>
+
+          <div className="empty-state">
+            Graph visualization will appear here.
+          </div>
+        </div>
+
+      </div>
+
     </div>
   );
 }

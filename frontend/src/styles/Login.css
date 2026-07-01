@@ -1,0 +1,262 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:'Inter',sans-serif;
+    background:#0b1120;
+    color:#f8fafc;
+}
+
+/* ===========================
+   LOGIN PAGE
+=========================== */
+
+.login-page{
+    display:flex;
+    min-height:100vh;
+    background:
+        radial-gradient(circle at top right, rgba(37,99,235,.08), transparent 30%),
+        radial-gradient(circle at bottom left, rgba(14,165,233,.06), transparent 35%),
+        #0b1120;
+}
+
+/* Left Side */
+
+.login-left{
+    flex:1;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:80px;
+    position:relative;
+    overflow:hidden;
+}
+
+/* Abstract Grid */
+
+.login-left::before{
+    content:"";
+    position:absolute;
+    inset:0;
+
+    background-image:
+    linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+
+    background-size:45px 45px;
+
+    opacity:.4;
+}
+
+.brand{
+    position:relative;
+    z-index:2;
+    max-width:520px;
+}
+
+.brand h1{
+    font-family:"Space Grotesk",sans-serif;
+    font-size:4rem;
+    color:white;
+    margin-bottom:20px;
+    letter-spacing:-2px;
+}
+
+.brand h2{
+    font-size:1.8rem;
+    font-weight:600;
+    color:#cbd5e1;
+    margin-bottom:25px;
+    line-height:1.3;
+}
+
+.brand p{
+    color:#94a3b8;
+    font-size:17px;
+    line-height:1.8;
+}
+
+/* Decorative Accent */
+
+.brand::after{
+    content:"";
+    display:block;
+    width:90px;
+    height:4px;
+    margin-top:35px;
+    background:#2563eb;
+    border-radius:20px;
+}
+
+/* ===========================
+   RIGHT SIDE
+=========================== */
+
+.login-right{
+    width:480px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#111827;
+    border-left:1px solid #1e293b;
+    padding:40px;
+}
+
+.login-card{
+    width:100%;
+}
+
+.login-card h2{
+    font-size:2rem;
+    margin-bottom:8px;
+    color:white;
+}
+
+.subtitle{
+    color:#94a3b8;
+    margin-bottom:35px;
+}
+
+/* Inputs */
+
+.input-group{
+    margin-bottom:22px;
+}
+
+.input-group label{
+    display:block;
+    color:#cbd5e1;
+    margin-bottom:8px;
+    font-size:14px;
+    font-weight:500;
+}
+
+.input-group input{
+    width:100%;
+    padding:14px 16px;
+    background:#0f172a;
+    border:1px solid #334155;
+    border-radius:10px;
+    color:white;
+    font-size:15px;
+    outline:none;
+    transition:.3s;
+}
+
+.input-group input:focus{
+    border-color:#2563eb;
+}
+
+/* Error */
+
+.error-box{
+    background:#3f1111;
+    color:#fecaca;
+    border-left:4px solid #ef4444;
+    padding:12px;
+    border-radius:8px;
+    margin-bottom:18px;
+    font-size:14px;
+}
+
+/* Buttons */
+
+.login-btn{
+    width:100%;
+    padding:14px;
+    background:#2563eb;
+    color:white;
+    border:none;
+    border-radius:10px;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.login-btn:hover{
+    background:#1d4ed8;
+}
+
+.divider{
+    height:1px;
+    background:#1e293b;
+    margin:30px 0;
+}
+
+.register-btn{
+    width:100%;
+    padding:14px;
+    background:transparent;
+    color:#cbd5e1;
+    border:1px solid #334155;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:15px;
+    transition:.3s;
+}
+
+.register-btn:hover{
+    border-color:#2563eb;
+    color:white;
+}
+
+/* ===========================
+   Responsive
+=========================== */
+
+@media(max-width:1000px){
+
+.login-page{
+    flex-direction:column;
+}
+
+.login-left{
+    min-height:45vh;
+    padding:50px;
+}
+
+.login-right{
+    width:100%;
+    border-left:none;
+    border-top:1px solid #1e293b;
+}
+
+.brand h1{
+    font-size:3rem;
+}
+
+.brand h2{
+    font-size:1.5rem;
+}
+
+}
+
+@media(max-width:600px){
+
+.login-left{
+    padding:35px;
+}
+
+.login-right{
+    padding:25px;
+}
+
+.brand h1{
+    font-size:2.4rem;
+}
+
+.brand h2{
+    font-size:1.3rem;
+}
+
+.subtitle{
+    margin-bottom:25px;
+}
+
+}
