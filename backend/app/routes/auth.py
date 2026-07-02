@@ -37,7 +37,10 @@ def login(user_data: LoginRequest, db: Session = Depends(get_db)):
 
     return {
         "access_token": token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "role": user.role,
+        "username": user.username,
+        "email": user.email
     }
 
 @router.post("/token", response_model=TokenResponse)
