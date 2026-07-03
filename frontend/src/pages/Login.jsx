@@ -23,33 +23,36 @@ function Login() {
   };
 
   const handleLogin = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    setErrorMessage("");
+  setErrorMessage("");
 
-    try {
-      const response = await loginUser(formData);
+  try {
+    const response = await loginUser(formData);
 
-      // Store authentication token
-      localStorage.setItem("access_token", response.access_token);
+    // Save user information
+    localStorage.setItem("access_token", response.access_token);
+    localStorage.setItem("role", response.role);
+    localStorage.setItem("username", response.username);
+    localStorage.setItem("email", response.email);
 
-      // Store login session
-      localStorage.setItem("isLoggedIn", "true");
-
-      // Redirect to dashboard
-      navigate("/dashboard", { replace: true });
-
-    } catch (error) {
-      if (error.response) {
-        setErrorMessage("Invalid Email or Password");
-      } else {
-        setErrorMessage("Something went wrong. Please try again.");
-      }
-
-      console.error(error);
+    // Redirect based on role
+    if (response.role === "Admin") {
+      navigate("/admin/dashboard");
+    } else {
+      navigate("/dashboard");
     }
-  };
 
+  } catch (error) {
+    if (error.response) {
+      setErrorMessage("Invalid Email or Password");
+    } else {
+      setErrorMessage("Something went wrong. Please try again.");
+    }
+
+    console.error(error);
+  }
+};
   return (
     <div className="login-page">
       <div className="login-left">

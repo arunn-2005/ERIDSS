@@ -1,0 +1,88 @@
+.admin-dashboard {
+    padding: 30px;
+    background: #f5f7fa;
+    min-height: 100vh;
+}
+
+.dashboard-header {
+    margin-bottom: 35px;
+}
+
+.dashboard-header h1 {
+    margin: 0;
+    font-size: 32px;
+    color: #1f2937;
+}
+
+.dashboard-header p {
+    margin-top: 8px;
+    color: #6b7280;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 12px rgba(0,0,0,.05);
+}
+
+.stat-card h3 {
+    margin: 0;
+    color: #6b7280;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.stat-card h2 {
+    margin-top: 15px;
+    font-size: 38px;
+    color: #111827;
+}
+
+.recent-users {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 12px rgba(0,0,0,.05);
+}
+
+.recent-users h2 {
+    margin-bottom: 20px;
+    color: #1f2937;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead {
+    background: #f3f4f6;
+}
+
+th,
+td {
+    padding: 14px;
+    text-align: left;
+}
+
+th {
+    color: #374151;
+}
+
+tbody tr {
+    border-bottom: 1px solid #e5e7eb;
+}
+
+tbody tr:hover {
+    background: #f9fafb;
+}

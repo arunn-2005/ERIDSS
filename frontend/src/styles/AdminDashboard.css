@@ -1,0 +1,173 @@
+.admin-dashboard{
+    background:var(--bg);
+    min-height:100vh;
+    padding:40px;
+}
+
+.dashboard-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:40px;
+}
+
+.dashboard-header h1{
+    font-size:34px;
+    margin:0;
+    color:var(--text);
+}
+
+.dashboard-header p{
+    margin-top:8px;
+    color:var(--text-light);
+    font-size:15px;
+}
+
+.stats-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:24px;
+    margin-bottom:40px;
+}
+
+.stat-card{
+
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+
+    padding:28px;
+
+    transition:var(--transition);
+
+    box-shadow:var(--shadow-sm);
+}
+
+.stat-card:hover{
+
+    transform:translateY(-4px);
+
+    box-shadow:var(--shadow-md);
+}
+
+.stat-card h3{
+
+    font-size:12px;
+
+    letter-spacing:1px;
+
+    text-transform:uppercase;
+
+    color:var(--text-light);
+
+    margin:0;
+}
+
+.stat-card h2{
+
+    font-size:42px;
+
+    margin:16px 0 6px;
+
+    color:var(--text);
+}
+
+.stat-card span{
+
+    color:var(--text-light);
+
+    font-size:14px;
+}
+
+.recent-users{
+
+    background:var(--surface);
+
+    border-radius:var(--radius);
+
+    border:1px solid var(--border);
+
+    padding:30px;
+
+    box-shadow:var(--shadow-sm);
+}
+
+.recent-users h2{
+
+    margin-top:0;
+
+    margin-bottom:24px;
+
+    font-size:22px;
+
+    color:var(--text);
+}
+
+table{
+
+    width:100%;
+
+    border-collapse:collapse;
+}
+
+thead{
+
+    background:#f8fafc;
+}
+
+th{
+
+    padding:18px;
+
+    font-size:13px;
+
+    color:var(--text-light);
+
+    text-transform:uppercase;
+
+    letter-spacing:.8px;
+}
+
+td{
+
+    padding:18px;
+
+    border-top:1px solid var(--border);
+
+    color:var(--text);
+}
+
+tbody tr{
+
+    transition:.2s;
+}
+
+tbody tr:hover{
+
+    background:#f9fafb;
+}
+
+.role{
+
+    padding:6px 14px;
+
+    border-radius:30px;
+
+    font-size:13px;
+
+    font-weight:600;
+}
+
+.role.admin{
+
+    background:#dbeafe;
+
+    color:#1d4ed8;
+}
+
+.role.user{
+
+    background:#f3f4f6;
+
+    color:#374151;
+}
