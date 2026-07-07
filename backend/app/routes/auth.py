@@ -25,7 +25,7 @@ def login(user_data: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Password Credentials does not match" 
-        )
+        ) 
 
     token = create_access_token(
         data={

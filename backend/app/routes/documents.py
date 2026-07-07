@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status, Query
 from sqlalchemy.orm import Session
 import uuid, shutil
+from typing import Optional
 
 from app.database.db import get_db
 from app.models.user import User
@@ -64,3 +65,66 @@ def upload_document(
     db.commit()
     db.refresh(document)
     return document
+
+@router.get(
+    "/my-documents",
+    response_model=list[DocumentPublicResponse]
+)
+def get_my_documents(
+    page: int = Query(1, ge=1, description="Page number"),
+    limit: int = Query(10, ge=1, le=100, description="Number of documents per page"),
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+    file_type: Optional[str] = None,
+    sort: str = Query("file_size"),
+    order: str = Query("desc"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    
+    offset = (page-1) * limit
+
+    query = db.query(Document).filter(Document.user_id == current_user.id)
+
+    if search:
+        query = query.filter(Document.filename.ilike(f"%{search}%"))
+
+    if status:
+        query = query.filter(Document.status == status)
+
+    if file_type:
+        query = query.filter(Document.file_type == file_type)
+
+    sort_columns = {
+        "filename": Document.filename,
+        "uploaded_at": Document.uploaded_at,
+        "file_size": Document.file_size,
+    }
+
+    sort_column = sort_columns.get(sort)
+
+    if sort_column is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid sort field."
+        )
+
+    if order.lower() not in ["asc", "desc"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Order must be 'asc' or 'desc'."
+        )
+
+    if order.lower() == "desc":
+        query = query.order_by(sort_column.desc())
+    else:
+        query = query.order_by(sort_column.asc())
+
+    documents = (
+        query 
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    return documents
