@@ -81,6 +81,12 @@ def get_my_documents(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+
+    print("Page:", page)
+    print("Limit:", limit)
+    print("Search:", search)
+    print("Status:", status)
+    print("File Type:", file_type)
     
     offset = (page-1) * limit
 
@@ -126,5 +132,33 @@ def get_my_documents(
         .limit(limit)
         .all()
     )
-
+    
     return documents
+
+
+@router.get(
+    "/{document_id}",
+    response_model=DocumentPublicResponse
+)
+def get_document(
+    document_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    document = (
+        db.query(Document)
+        .filter(
+            Document.id == document_id,
+            Document.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found."
+        )
+
+    return document
