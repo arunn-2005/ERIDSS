@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status,
 from sqlalchemy.orm import Session
 import uuid, shutil
 from typing import Optional
+from fastapi.responses import FileResponse
+from pathlib import Path
 
 from app.database.db import get_db
 from app.models.user import User
@@ -162,3 +164,123 @@ def get_document(
         )
 
     return document
+
+@router.get("/{document_id}/download")
+def download_document(
+    document_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    document = (
+        db.query(Document)
+        .filter(
+            Document.id == document_id,
+            Document.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found."
+        )
+
+    file_path = Path(document.file_path)
+
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found on server."
+        )
+
+    return FileResponse(
+        path=file_path,
+        media_type=document.mime_type,
+        filename=document.filename
+    )
+
+@router.get("/{document_id}/view")
+def view_document(
+    document_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    document = (
+        db.query(Document)
+        .filter(
+            Document.id == document_id,
+            Document.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found."
+        )
+
+    file_path = Path(document.file_path)
+
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found on server."
+        )
+
+    if document.mime_type not in [
+        "application/pdf",
+        "text/plain"
+    ]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This file type cannot be viewed directly. Please download it."
+        )
+
+    return FileResponse(
+        path=file_path,
+        media_type=document.mime_type,
+        headers={
+            "Content-Disposition": f'inline; filename="{document.filename}"'
+        }
+    )
+
+from pathlib import Path
+
+@router.delete("/{document_id}")
+def delete_document(
+    document_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    document = (
+        db.query(Document)
+        .filter(
+            Document.id == document_id,
+            Document.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found."
+        )
+
+    file_path = Path(document.file_path)
+
+    if file_path.exists():
+        file_path.unlink()
+
+    db.delete(document)
+
+    db.commit()
+
+    return {
+        "message": "Document deleted successfully."
+    }
