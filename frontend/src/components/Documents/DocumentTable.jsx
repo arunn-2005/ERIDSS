@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
-import { getMyDocuments } from "../../services/documentService";
-
+import {
+  getMyDocuments,
+  downloadDocument,
+  viewDocument,
+  deleteDocument,
+} from "../../services/documentService";
 function DocumentTable({ refresh }) {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,11 +16,15 @@ function DocumentTable({ refresh }) {
   const [search, setSearch] = useState("");
   const [fileTypeFilter, setFileTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [sortBy, setSortBy] = useState("file_size");
+  const [sortOrder, setSortOrder] = useState("desc");
 
-  // Applied values (used for API calls)
+  // Applied values
   const [appliedSearch, setAppliedSearch] = useState("");
   const [appliedFileType, setAppliedFileType] = useState("");
   const [appliedStatus, setAppliedStatus] = useState("");
+  const [appliedSortBy, setAppliedSortBy] = useState("file_size");
+  const [appliedSortOrder, setAppliedSortOrder] = useState("desc");
 
   const loadDocuments = async () => {
     try {
@@ -27,7 +35,9 @@ function DocumentTable({ refresh }) {
         limit,
         appliedSearch,
         appliedStatus,
-        appliedFileType
+        appliedFileType,
+        appliedSortBy,
+        appliedSortOrder
       );
 
       setDocuments(data);
@@ -40,13 +50,39 @@ function DocumentTable({ refresh }) {
 
   useEffect(() => {
     loadDocuments();
-  }, [refresh, page, appliedSearch, appliedStatus, appliedFileType]);
+  }, [
+    refresh,
+    page,
+    appliedSearch,
+    appliedStatus,
+    appliedFileType,
+    appliedSortBy,
+    appliedSortOrder,
+  ]);
 
   const applyFilters = () => {
     setPage(1);
     setAppliedSearch(search);
     setAppliedStatus(statusFilter);
     setAppliedFileType(fileTypeFilter);
+    setAppliedSortBy(sortBy);
+    setAppliedSortOrder(sortOrder);
+  };
+
+  const resetFilters = () => {
+    setSearch("");
+    setFileTypeFilter("");
+    setStatusFilter("");
+    setSortBy("file_size");
+    setSortOrder("desc");
+
+    setAppliedSearch("");
+    setAppliedFileType("");
+    setAppliedStatus("");
+    setAppliedSortBy("file_size");
+    setAppliedSortOrder("desc");
+
+    setPage(1);
   };
 
   return (
@@ -80,9 +116,9 @@ function DocumentTable({ refresh }) {
           onChange={(e) => setFileTypeFilter(e.target.value)}
         >
           <option value="">All File Types</option>
-          <option value="pdf">PDF</option>
-          <option value="docx">DOCX</option>
-          <option value="txt">TXT</option>
+          <option value=".pdf">PDF</option>
+          <option value=".docx">DOCX</option>
+          <option value=".txt">TXT</option>
         </select>
 
         <select
@@ -95,23 +131,28 @@ function DocumentTable({ refresh }) {
           <option value="Failed">Failed</option>
         </select>
 
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+        >
+          <option value="file_size">File Size</option>
+          <option value="filename">Filename</option>
+          <option value="uploaded_at">Upload Date</option>
+        </select>
+
+        <select
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value)}
+        >
+          <option value="desc">Descending</option>
+          <option value="asc">Ascending</option>
+        </select>
+
         <button onClick={applyFilters}>
           Search
         </button>
 
-        <button
-          onClick={() => {
-            setSearch("");
-            setStatusFilter("");
-            setFileTypeFilter("");
-
-            setAppliedSearch("");
-            setAppliedStatus("");
-            setAppliedFileType("");
-
-            setPage(1);
-          }}
-        >
+        <button onClick={resetFilters}>
           Reset
         </button>
       </div>
@@ -135,6 +176,7 @@ function DocumentTable({ refresh }) {
                 <th>File Size</th>
                 <th>Status</th>
                 <th>Uploaded At</th>
+                <th>Actions</th>
               </tr>
             </thead>
 
@@ -153,17 +195,55 @@ function DocumentTable({ refresh }) {
                     <td>{(doc.file_size / 1024).toFixed(2)} KB</td>
                     <td>{doc.status}</td>
                     <td>{new Date(doc.uploaded_at).toLocaleString()}</td>
+                     <td>
+  <button
+    title="View"
+    onClick={() => viewDocument(doc.id)}
+    style={{
+      marginRight: "8px",
+      cursor: "pointer",
+    }}
+  >
+    👁️
+  </button>
+
+  <button
+    title="Download"
+    onClick={() => downloadDocument(doc.id, doc.filename)}
+    style={{
+      marginRight: "8px",
+      cursor: "pointer",
+    }}
+  >
+    ⬇️
+  </button>
+
+  <button
+    title="Delete"
+    onClick={() => handleDelete(doc.id)}
+    style={{
+      cursor: "pointer",
+      color: "red",
+    }}
+  >
+    🗑️
+  </button>
+</td>
+
                   </tr>
                 ))
               )}
             </tbody>
           </table>
 
+          {/* Pagination */}
+
           <div
             style={{
               marginTop: "20px",
               display: "flex",
               justifyContent: "center",
+              alignItems: "center",
               gap: "20px",
             }}
           >
@@ -188,5 +268,27 @@ function DocumentTable({ refresh }) {
     </div>
   );
 }
+const handleDelete = async (documentId) => {
+  const confirmDelete = window.confirm(
+    "Are you sure you want to delete this document?"
+  );
 
+  if (!confirmDelete) return;
+
+  try {
+    await deleteDocument(documentId);
+
+    alert("Document deleted successfully.");
+
+    loadDocuments();
+  } catch (error) {
+    console.error(error);
+
+   // alert(
+   //   error.response?.data?.detail ||
+     // error.message ||
+     // "Failed to delete document."
+   // );
+  }
+};
 export default DocumentTable;
