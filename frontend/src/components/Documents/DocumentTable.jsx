@@ -8,11 +8,27 @@ function DocumentTable({ refresh }) {
   const [page, setPage] = useState(1);
   const limit = 10;
 
+  // Input values
+  const [search, setSearch] = useState("");
+  const [fileTypeFilter, setFileTypeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
+  // Applied values (used for API calls)
+  const [appliedSearch, setAppliedSearch] = useState("");
+  const [appliedFileType, setAppliedFileType] = useState("");
+  const [appliedStatus, setAppliedStatus] = useState("");
+
   const loadDocuments = async () => {
     try {
       setLoading(true);
 
-      const data = await getMyDocuments(page, limit);
+      const data = await getMyDocuments(
+        page,
+        limit,
+        appliedSearch,
+        appliedStatus,
+        appliedFileType
+      );
 
       setDocuments(data);
     } catch (error) {
@@ -24,87 +40,151 @@ function DocumentTable({ refresh }) {
 
   useEffect(() => {
     loadDocuments();
-  }, [refresh, page]);
+  }, [refresh, page, appliedSearch, appliedStatus, appliedFileType]);
 
-  if (loading) {
-    return <p>Loading documents...</p>;
-  }
+  const applyFilters = () => {
+    setPage(1);
+    setAppliedSearch(search);
+    setAppliedStatus(statusFilter);
+    setAppliedFileType(fileTypeFilter);
+  };
 
   return (
     <div style={{ marginTop: "30px" }}>
       <h2>Uploaded Documents</h2>
 
-      <table
-        border="1"
-        cellPadding="10"
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-        }}
-      >
-        <thead>
-          <tr>
-            <th>Filename</th>
-            <th>File Type</th>
-            <th>File Size</th>
-            <th>Status</th>
-            <th>Uploaded At</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {documents.length === 0 ? (
-            <tr>
-              <td colSpan="5" style={{ textAlign: "center" }}>
-                No documents uploaded yet.
-              </td>
-            </tr>
-          ) : (
-            documents.map((doc) => (
-              <tr key={doc.id}>
-                <td>{doc.filename}</td>
-                <td>{doc.file_type}</td>
-                <td>{(doc.file_size / 1024).toFixed(2)} KB</td>
-                <td>{doc.status}</td>
-                <td>{new Date(doc.uploaded_at).toLocaleString()}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-
-      {/* Pagination */}
+      {/* Search & Filters */}
 
       <div
         style={{
-          marginTop: "20px",
           display: "flex",
-          justifyContent: "center",
           gap: "15px",
+          marginBottom: "20px",
+          flexWrap: "wrap",
+          alignItems: "center",
         }}
       >
-        <button
-          onClick={() => setPage(page - 1)}
-          disabled={page === 1}
-        >
-          Previous
-        </button>
+        <input
+          type="text"
+          placeholder="Search by filename..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            padding: "8px",
+            width: "250px",
+          }}
+        />
 
-        <span>
-          Page {page}
-        </span>
+        <select
+          value={fileTypeFilter}
+          onChange={(e) => setFileTypeFilter(e.target.value)}
+        >
+          <option value="">All File Types</option>
+          <option value="pdf">PDF</option>
+          <option value="docx">DOCX</option>
+          <option value="txt">TXT</option>
+        </select>
+
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="">All Status</option>
+          <option value="Uploaded">Uploaded</option>
+          <option value="Processed">Processed</option>
+          <option value="Failed">Failed</option>
+        </select>
+
+        <button onClick={applyFilters}>
+          Search
+        </button>
 
         <button
           onClick={() => {
-            if (documents.length === limit) {
-              setPage(page + 1);
-            }
+            setSearch("");
+            setStatusFilter("");
+            setFileTypeFilter("");
+
+            setAppliedSearch("");
+            setAppliedStatus("");
+            setAppliedFileType("");
+
+            setPage(1);
           }}
-          disabled={documents.length < limit}
         >
-          Next
+          Reset
         </button>
       </div>
+
+      {loading ? (
+        <p>Loading documents...</p>
+      ) : (
+        <>
+          <table
+            border="1"
+            cellPadding="10"
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+            }}
+          >
+            <thead>
+              <tr>
+                <th>Filename</th>
+                <th>File Type</th>
+                <th>File Size</th>
+                <th>Status</th>
+                <th>Uploaded At</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {documents.length === 0 ? (
+                <tr>
+                  <td colSpan="5" style={{ textAlign: "center" }}>
+                    No documents found.
+                  </td>
+                </tr>
+              ) : (
+                documents.map((doc) => (
+                  <tr key={doc.id}>
+                    <td>{doc.filename}</td>
+                    <td>{doc.file_type.toUpperCase()}</td>
+                    <td>{(doc.file_size / 1024).toFixed(2)} KB</td>
+                    <td>{doc.status}</td>
+                    <td>{new Date(doc.uploaded_at).toLocaleString()}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+
+          <div
+            style={{
+              marginTop: "20px",
+              display: "flex",
+              justifyContent: "center",
+              gap: "20px",
+            }}
+          >
+            <button
+              disabled={page === 1}
+              onClick={() => setPage(page - 1)}
+            >
+              Previous
+            </button>
+
+            <strong>Page {page}</strong>
+
+            <button
+              disabled={documents.length < limit}
+              onClick={() => setPage(page + 1)}
+            >
+              Next
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
