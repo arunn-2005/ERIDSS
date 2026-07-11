@@ -4,8 +4,8 @@ from app.routes.users import router as users_router
 from app.routes.documents import router as documents_router
 from app.routes.auth import router as auth_router
 from app.routes.admin import router as admin_router
+from app.routes.admin_documents import router as admin_documents_router
 from app.database.database import Base, engine
-from app import models, schemas
 from fastapi.middleware.cors import CORSMiddleware
 Base.metadata.create_all(bind=engine)
 
@@ -29,7 +29,7 @@ app.include_router(users_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(documents_router)
-
+app.include_router(admin_documents_router)
 @app.get("/")
 def root():
     return {

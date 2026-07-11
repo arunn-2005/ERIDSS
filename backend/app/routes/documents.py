@@ -248,8 +248,6 @@ def view_document(
         }
     )
 
-from pathlib import Path
-
 @router.delete("/{document_id}")
 def delete_document(
     document_id: uuid.UUID,
