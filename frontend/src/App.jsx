@@ -17,6 +17,7 @@ import UserManagement from "./pages/UserManagement";
 import AdminDocuments from "./pages/AdminDocuments";
 import SystemLogs from "./pages/SystemLogs";
 import AdminSettings from "./pages/AdminSettings";
+import AdminDocumentDashboard from "./pages/AdminDocumentDashboard";
 
 // Layouts
 import MainLayout from "./layouts/MainLayout";
@@ -46,6 +47,10 @@ function App() {
         <Route path="/admin/users" element={<UserManagement />} />
         <Route path="/admin/documents" element={<AdminDocuments />} />
         <Route path="/admin/system-logs" element={<SystemLogs />} />
+        <Route
+    path="/admin/documents/dashboard"
+    element={<AdminDocumentDashboard />}
+/>
         <Route path="/admin/settings" element={<AdminSettings />} />
       </Route>
 

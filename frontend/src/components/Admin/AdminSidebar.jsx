@@ -26,9 +26,15 @@ function AdminSidebar() {
           Users
         </NavLink>
 
-        <NavLink to="/admin/documents">
+        <NavLink to="/admin/documents" end>
           Documents
         </NavLink>
+        
+        <NavLink to="/admin/documents/dashboard">
+          Document Dashboard
+        </NavLink>
+
+
 
         <NavLink to="/admin/system-logs">
           System Logs
