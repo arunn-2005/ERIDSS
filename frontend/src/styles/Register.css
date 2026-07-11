@@ -1,0 +1,277 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:'Inter',sans-serif;
+    background:#0b1120;
+    color:#f8fafc;
+}
+
+/* ===========================
+   REGISTER PAGE
+=========================== */
+
+.register-page{
+    display:flex;
+    min-height:100vh;
+    background:
+        radial-gradient(circle at top right, rgba(37,99,235,.08), transparent 30%),
+        radial-gradient(circle at bottom left, rgba(14,165,233,.06), transparent 35%),
+        #0b1120;
+}
+
+/* ===========================
+   LEFT SIDE
+=========================== */
+
+.register-left{
+    flex:1;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:80px;
+    position:relative;
+    overflow:hidden;
+}
+
+.register-left::before{
+    content:"";
+    position:absolute;
+    inset:0;
+
+    background-image:
+        linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+
+    background-size:45px 45px;
+    opacity:.4;
+}
+
+.brand{
+    position:relative;
+    z-index:2;
+    max-width:520px;
+}
+
+.brand h1{
+    font-family:"Space Grotesk",sans-serif;
+    font-size:4rem;
+    color:white;
+    margin-bottom:20px;
+    letter-spacing:-2px;
+}
+
+.brand h2{
+    font-size:1.8rem;
+    font-weight:600;
+    color:#cbd5e1;
+    margin-bottom:25px;
+    line-height:1.3;
+}
+
+.brand p{
+    color:#94a3b8;
+    font-size:17px;
+    line-height:1.8;
+}
+
+.brand::after{
+    content:"";
+    display:block;
+    width:90px;
+    height:4px;
+    margin-top:35px;
+    background:#2563eb;
+    border-radius:20px;
+}
+
+/* ===========================
+   RIGHT SIDE
+=========================== */
+
+.register-right{
+    width:500px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#111827;
+    border-left:1px solid #1e293b;
+    padding:40px;
+}
+
+.register-card{
+    width:100%;
+}
+
+.register-card h2{
+    font-size:2rem;
+    color:white;
+    margin-bottom:8px;
+}
+
+.subtitle{
+    color:#94a3b8;
+    margin-bottom:30px;
+}
+
+/* ===========================
+   FORM
+=========================== */
+
+.input-group{
+    margin-bottom:20px;
+}
+
+.input-group label{
+    display:block;
+    color:#cbd5e1;
+    margin-bottom:8px;
+    font-size:14px;
+    font-weight:500;
+}
+
+.input-group input,
+.input-group select{
+    width:100%;
+    padding:14px 16px;
+    background:#0f172a;
+    border:1px solid #334155;
+    border-radius:10px;
+    color:white;
+    font-size:15px;
+    outline:none;
+    transition:.3s;
+}
+
+.input-group input:focus,
+.input-group select:focus{
+    border-color:#2563eb;
+}
+
+/* Dropdown */
+
+.input-group select{
+    appearance:none;
+    cursor:pointer;
+}
+
+.input-group select option{
+    background:#111827;
+    color:white;
+}
+
+/* Error */
+
+.error-box{
+    background:#3f1111;
+    color:#fecaca;
+    border-left:4px solid #ef4444;
+    padding:12px;
+    border-radius:8px;
+    margin-bottom:20px;
+    font-size:14px;
+}
+
+/* ===========================
+   BUTTONS
+=========================== */
+
+.register-btn{
+    width:100%;
+    padding:14px;
+    background:#16a34a;
+    color:white;
+    border:none;
+    border-radius:10px;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.register-btn:hover{
+    background:#15803d;
+}
+
+.divider{
+    height:1px;
+    background:#1e293b;
+    margin:30px 0;
+}
+
+.login-btn{
+    width:100%;
+    padding:14px;
+    background:transparent;
+    color:#cbd5e1;
+    border:1px solid #334155;
+    border-radius:10px;
+    font-size:15px;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.login-btn:hover{
+    border-color:#2563eb;
+    color:white;
+}
+
+/* ===========================
+   RESPONSIVE
+=========================== */
+
+@media(max-width:1000px){
+
+.register-page{
+    flex-direction:column;
+}
+
+.register-left{
+    min-height:45vh;
+    padding:50px;
+}
+
+.register-right{
+    width:100%;
+    border-left:none;
+    border-top:1px solid #1e293b;
+}
+
+.brand h1{
+    font-size:3rem;
+}
+
+.brand h2{
+    font-size:1.5rem;
+}
+
+}
+
+@media(max-width:600px){
+
+.register-left{
+    padding:35px;
+}
+
+.register-right{
+    padding:25px;
+}
+
+.brand h1{
+    font-size:2.4rem;
+}
+
+.brand h2{
+    font-size:1.3rem;
+}
+
+.subtitle{
+    margin-bottom:25px;
+}
+
+}

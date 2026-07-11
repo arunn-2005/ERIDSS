@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerUser } from "../services/authService";
+import "../styles/Register.css";
 
 function Register() {
   const navigate = useNavigate();
@@ -39,77 +40,132 @@ function Register() {
         email: formData.email,
         password: formData.password,
       });
-      navigate("/login");
 
+      navigate("/login");
     } catch (err) {
       if (err.response && err.response.data) {
         setError(err.response.data.detail);
       } else {
         setError("Registration failed. Please try again.");
       }
-
-      console.error(err);
     }
   };
 
   return (
-    <div style={{ padding: "40px" }}>
-      <h1>Register</h1>
+    <div className="register-page">
 
-      <form onSubmit={handleRegister}>
+      <div className="register-left">
 
-        <input
-          type="text"
-          name="username"
-          placeholder="Username"
-          value={formData.username}
-          onChange={handleChange}
-        />
-        <br /><br />
+        <div className="brand">
+          <h1>ERIDSS</h1>
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-        />
-        <br /><br />
+          <h2>
+            Enterprise Risk Intelligence Decision
+            <br />
+           Support System
+          </h2>
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-        />
-        <br /><br />
-
-        <input
-          type="password"
-          name="confirm_password"
-          placeholder="Confirm Password"
-          value={formData.confirm_password}
-          onChange={handleChange}
-        />
-        <br /><br />
-
-        {error && (
-          <p style={{ color: "red", fontWeight: "bold" }}>
-            {error}
+          <p>
+              Transform enterprise documents into actionable insights using
+            AI-powered entity extraction, Knowledge Graphs and intelligent
+            risk analysis.
           </p>
-        )}
+        </div>
 
-        <button type="submit">
-          Register
-        </button>
-      </form>
+      </div>
 
-      <br />
+      <div className="register-right">
 
-      <button onClick={() => navigate("/login")}>
-        Back to Login
-      </button>
+        <div className="register-card">
+
+          <h2>Create Account</h2>
+
+          <p className="subtitle">
+            Register to access the ERIDSS platform.
+          </p>
+
+          <form onSubmit={handleRegister}>
+
+            <div className="input-group">
+              <label>Username</label>
+
+              <input
+                type="text"
+                name="username"
+                placeholder="Enter username"
+                value={formData.username}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="input-group">
+              <label>Email</label>
+
+              <input
+                type="email"
+                name="email"
+                placeholder="Enter email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="input-group">
+              <label>Password</label>
+
+              <input
+                type="password"
+                name="password"
+                placeholder="Enter password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="input-group">
+              <label>Confirm Password</label>
+
+              <input
+                type="password"
+                name="confirm_password"
+                placeholder="Confirm password"
+                value={formData.confirm_password}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            {error && (
+              <div className="error-box">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="register-btn"
+            >
+              Create Account
+            </button>
+
+          </form>
+
+          <div className="divider"></div>
+
+          <button
+            className="login-btn"
+            onClick={() => navigate("/login")}
+          >
+            Back to Login
+          </button>
+
+        </div>
+
+      </div>
+
     </div>
   );
 }
