@@ -12,7 +12,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 
 from sqlalchemy.sql import func
-
+from sqlalchemy.orm import relationship
 from app.database.database import Base
 
 
@@ -76,4 +76,17 @@ class Document(Base):
     processed_at = Column(
         DateTime(timezone=True),
         nullable=True
+    )
+
+    processing_jobs = relationship(
+        "ProcessingJob",
+        back_populates="document",
+        cascade="all, delete-orphan"
+    )
+
+    extracted_text = relationship(
+        "ExtractedText",
+        back_populates="document",
+        uselist=False,
+        cascade="all, delete-orphan"
     )
