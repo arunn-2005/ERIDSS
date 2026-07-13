@@ -4,14 +4,18 @@ import uuid, shutil
 from typing import Optional
 from fastapi.responses import FileResponse
 from pathlib import Path
+from datetime import datetime, timezone
 
 from app.database.db import get_db
 from app.models.user import User
+from app.models.document import Document
+from app.models.processing_job import ProcessingJob
+from app.models.extracted_text import ExtractedText
 from app.dependencies.auth import get_current_user
 from app.utils.file_validator import validate_file_extension, validate_mime_type, validate_file_size
-from app.core.config import UPLOAD_DIR
-from app.models.document import Document
+from app.core.config import UPLOAD_DIR, EXTRACTION_METHODS
 from app.schemas.document import DocumentPublicResponse
+from app.services.text_extractor import extract_text 
 
 router = APIRouter(
     prefix="/documents",
@@ -67,6 +71,101 @@ def upload_document(
     db.commit()
     db.refresh(document)
     return document
+
+@router.post(
+    "/{document_id}/process",
+    status_code=status.HTTP_200_OK
+)
+def process_document(
+    document_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    document = (
+        db.query(Document)
+        .filter(
+            Document.id == document_id,
+            Document.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found."
+        )
+    
+    if document.status == "Processing":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Document is already being processed."
+        )
+
+    if document.status == "Processed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Document has already been processed."
+        )
+    
+    processing_job = ProcessingJob(
+        document_id=document.id,
+        stage="Extraction",
+        status="Running"
+    )
+
+    db.add(processing_job)
+
+    document.status = "Processing"
+
+    db.commit()
+
+    db.refresh(processing_job)
+    db.refresh(document)
+
+    try:
+        text = extract_text(
+            file_path=Path(document.file_path),
+            file_type=document.file_type
+        )
+
+        extracted_text = ExtractedText(
+            document_id=document.id,
+            extracted_text=text,
+            extraction_method=EXTRACTION_METHODS[document.file_type]
+        )
+
+        db.add(extracted_text)
+
+        processing_job.status = "Completed"
+        processing_job.completed_at = datetime.now(timezone.utc)
+
+        document.status = "Processed"
+        document.processed_at = datetime.now(timezone.utc)
+
+        db.commit()
+
+        db.refresh(extracted_text)
+        db.refresh(processing_job)
+        db.refresh(document)
+
+    except Exception as e:
+
+        db.rollback()
+
+        processing_job.status = "Failed"
+        processing_job.error_message = str(e)
+        processing_job.completed_at = datetime.now(timezone.utc)
+
+        document.status = "Failed"
+        document.processed_at = datetime.now(timezone.utc)
+
+        db.commit()
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Document processing failed."
+        )
 
 @router.get(
     "/my-documents",
