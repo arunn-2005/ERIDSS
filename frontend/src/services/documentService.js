@@ -121,3 +121,15 @@ export const deleteDocument = async (documentId) => {
 
   return response.data;
 };
+
+
+
+import api from "./api";
+
+export const processDocument = async (documentId) => {
+  const response = await api.post(
+    `/documents/${documentId}/process`
+  );
+
+  return response.data;
+};

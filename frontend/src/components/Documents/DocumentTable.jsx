@@ -4,6 +4,7 @@ import {
   downloadDocument,
   viewDocument,
   deleteDocument,
+  processDocument,
 } from "../../services/documentService";
 function DocumentTable({ refresh }) {
   const [documents, setDocuments] = useState([]);
@@ -84,6 +85,44 @@ function DocumentTable({ refresh }) {
 
     setPage(1);
   };
+  const handleProcess = async (documentId) => {
+  try {
+    await processDocument(documentId);
+
+    alert("Document processed successfully.");
+
+    loadDocuments(); // Refresh the table
+  } catch (error) {
+    console.error(error);
+
+    alert(
+      error.response?.data?.detail ||
+      "Failed to process document."
+    );
+  }
+};
+const handleDelete = async (documentId) => {
+  const confirmDelete = window.confirm(
+    "Are you sure you want to delete this document?"
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    await deleteDocument(documentId);
+
+    alert("Document deleted successfully.");
+
+    loadDocuments();
+  } catch (error) {
+    console.error(error);
+
+    alert(
+      error.response?.data?.detail ||
+      "Failed to delete document."
+    );
+  }
+};
 
   return (
     <div style={{ marginTop: "30px" }}>
@@ -219,6 +258,25 @@ function DocumentTable({ refresh }) {
   </button>
 
   <button
+    title="Process"
+    onClick={() => handleProcess(doc.id)}
+    disabled={
+      doc.status === "Processing" ||
+      doc.status === "Processed"
+    }
+    style={{
+      marginRight: "8px",
+      cursor:
+        doc.status === "Processing" ||
+        doc.status === "Processed"
+          ? "not-allowed"
+          : "pointer",
+    }}
+  >
+    ⚙️
+  </button>
+
+  <button
     title="Delete"
     onClick={() => handleDelete(doc.id)}
     style={{
@@ -268,27 +326,5 @@ function DocumentTable({ refresh }) {
     </div>
   );
 }
-const handleDelete = async (documentId) => {
-  const confirmDelete = window.confirm(
-    "Are you sure you want to delete this document?"
-  );
 
-  if (!confirmDelete) return;
-
-  try {
-    await deleteDocument(documentId);
-
-    alert("Document deleted successfully.");
-
-    loadDocuments();
-  } catch (error) {
-    console.error(error);
-
-   // alert(
-   //   error.response?.data?.detail ||
-     // error.message ||
-     // "Failed to delete document."
-   // );
-  }
-};
 export default DocumentTable;
