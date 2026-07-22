@@ -11,10 +11,13 @@ from app.models.user import User
 from app.models.document import Document
 from app.models.processing_job import ProcessingJob
 from app.models.extracted_text import ExtractedText
+from app.models.entity import Entity
+from app.models.entity_evidence import EntityEvidence
 from app.dependencies.auth import get_current_user
 from app.utils.file_validator import validate_file_extension, validate_mime_type, validate_file_size
 from app.core.config import UPLOAD_DIR, EXTRACTION_METHODS
 from app.schemas.document import DocumentPublicResponse
+
 from app.services.text_extractor import extract_text 
 
 router = APIRouter(

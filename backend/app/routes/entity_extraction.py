@@ -1,0 +1,268 @@
+import uuid
+
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.database.db import get_db
+
+from app.models.user import User
+from app.models.document import Document
+from app.models.extracted_text import ExtractedText
+from app.models.entity import Entity
+from app.models.entity_evidence import EntityEvidence
+from app.models.processing_job import ProcessingJob
+
+from app.dependencies.auth import get_current_user
+
+from app.services.entity_extractor import extract_entities
+
+
+router = APIRouter(
+    prefix="/documents",
+    tags=["Entity Extraction"]
+)
+
+
+@router.post(
+    "/{document_id}/extract-entities",
+    status_code=status.HTTP_200_OK
+)
+def extract_document_entities(
+    document_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    # ---------------------------------
+    # 1. Find document
+    # ---------------------------------
+
+    document = (
+        db.query(Document)
+        .filter(
+            Document.id == document_id,
+            Document.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found."
+        )
+
+
+    # ---------------------------------
+    # 2. Get extracted text
+    # ---------------------------------
+
+    extracted_text = (
+        db.query(ExtractedText)
+        .filter(
+            ExtractedText.document_id == document.id
+        )
+        .first()
+    )
+
+    if not extracted_text:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Document text has not been extracted yet."
+        )
+
+
+    # ---------------------------------
+    # 3. Check running NLP job
+    # ---------------------------------
+
+    existing_job = (
+        db.query(ProcessingJob)
+        .filter(
+            ProcessingJob.document_id == document.id,
+            ProcessingJob.stage == "NLP",
+            ProcessingJob.status == "Running"
+        )
+        .first()
+    )
+
+    if existing_job:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Entity extraction is already in progress."
+        )
+
+
+    # ---------------------------------
+    # 4. Create NLP processing job
+    # ---------------------------------
+
+    processing_job = ProcessingJob(
+        document_id=document.id,
+        stage="NLP",
+        status="Running",
+        started_at=datetime.now(timezone.utc)
+    )
+
+    db.add(processing_job)
+
+    db.commit()
+
+    db.refresh(processing_job)
+
+
+    try:
+
+        # ---------------------------------
+        # 5. Extract entities
+        # ---------------------------------
+
+        extracted_entities = extract_entities(
+            extracted_text.extracted_text
+        )
+
+
+        saved_entities = []
+
+
+        # ---------------------------------
+        # 6. Process entities
+        # ---------------------------------
+
+        for entity_data in extracted_entities:
+
+            entity = (
+                db.query(Entity)
+                .filter(
+                    Entity.document_id == document.id,
+                    Entity.normalized_name
+                    == entity_data["normalized_name"],
+                    Entity.entity_type
+                    == entity_data["entity_type"]
+                )
+                .first()
+            )
+
+
+            # ---------------------------------
+            # 7. Create entity if new
+            # ---------------------------------
+
+            if not entity:
+
+                entity = Entity(
+                    document_id=document.id,
+                    entity_name=entity_data["entity_name"],
+                    normalized_name=entity_data["normalized_name"],
+                    entity_type=entity_data["entity_type"],
+                    confidence_score=None
+                )
+
+                db.add(entity)
+
+                db.flush()
+
+
+            # ---------------------------------
+            # 8. Check duplicate evidence
+            # ---------------------------------
+
+            existing_evidence = (
+                db.query(EntityEvidence)
+                .filter(
+                    EntityEvidence.entity_id == entity.id,
+                    EntityEvidence.document_id == document.id,
+                    EntityEvidence.source_text
+                    == entity_data["source_text"]
+                )
+                .first()
+            )
+
+
+            # ---------------------------------
+            # 9. Create evidence
+            # ---------------------------------
+
+            if not existing_evidence:
+
+                evidence = EntityEvidence(
+                    entity_id=entity.id,
+                    document_id=document.id,
+                    source_text=entity_data["source_text"]
+                )
+
+                db.add(evidence)
+
+
+            if entity not in saved_entities:
+                saved_entities.append(entity)
+
+
+        # ---------------------------------
+        # 10. Mark job completed
+        # ---------------------------------
+
+        processing_job.status = "Completed"
+
+        processing_job.completed_at = (
+            datetime.now(timezone.utc)
+        )
+
+
+        db.commit()
+
+
+        # ---------------------------------
+        # 11. Refresh
+        # ---------------------------------
+
+        db.refresh(processing_job)
+
+        for entity in saved_entities:
+            db.refresh(entity)
+
+
+        # ---------------------------------
+        # 12. Return response
+        # ---------------------------------
+
+        return {
+            "message": "Entity extraction completed successfully.",
+            "document_id": document.id,
+            "processing_job_id": processing_job.id,
+            "entities": [
+                {
+                    "id": entity.id,
+                    "entity_name": entity.entity_name,
+                    "normalized_name": entity.normalized_name,
+                    "entity_type": entity.entity_type
+                }
+                for entity in saved_entities
+            ]
+        }
+
+
+    except Exception as e:
+
+        # ---------------------------------
+        # 13. Mark job failed
+        # ---------------------------------
+
+        processing_job.status = "Failed"
+
+        processing_job.completed_at = (
+            datetime.now(timezone.utc)
+        )
+
+        processing_job.error_message = str(e)
+
+
+        db.commit()
+
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Entity extraction failed."
+        )

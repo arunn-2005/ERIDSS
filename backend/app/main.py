@@ -3,6 +3,7 @@ from app.routes.test import router as test_router
 from app.routes.users import router as users_router
 from app.routes.documents import router as documents_router
 from app.routes.auth import router as auth_router
+from app.routes.entity_extraction import router as entity_extraction_router
 from app.routes.admin import router as admin_router
 from app.routes.admin_documents import router as admin_documents_router
 from app.database.database import Base, engine
@@ -30,6 +31,7 @@ app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(documents_router)
 app.include_router(admin_documents_router)
+app.include_router(entity_extraction_router)
 @app.get("/")
 def root():
     return {
