@@ -5,10 +5,13 @@ import {
   viewDocument,
   deleteDocument,
   processDocument,
+  extractEntities,
 } from "../../services/documentService";
+
 function DocumentTable({ refresh }) {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState(null);
 
   const [page, setPage] = useState(1);
   const limit = 10;
@@ -85,51 +88,60 @@ function DocumentTable({ refresh }) {
 
     setPage(1);
   };
+
   const handleProcess = async (documentId) => {
-  try {
-    await processDocument(documentId);
+    try {
+      setProcessingId(documentId);
 
-    alert("Document processed successfully.");
+      // Step 1: Text extraction (stores text in DB)
+      await processDocument(documentId);
 
-    loadDocuments(); // Refresh the table
-  } catch (error) {
-    console.error(error);
+      // Step 2: Entity extraction (stores entities in DB)
+      await extractEntities(documentId);
 
-    alert(
-      error.response?.data?.detail ||
-      "Failed to process document."
+      alert("Document processed successfully.");
+
+      loadDocuments(); // Refresh the table
+    } catch (error) {
+      console.error("Processing error:", error);
+
+      alert(
+        error.response?.data?.detail ||
+          "Failed to process document."
+      );
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDelete = async (documentId) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this document?"
     );
-  }
-};
-const handleDelete = async (documentId) => {
-  const confirmDelete = window.confirm(
-    "Are you sure you want to delete this document?"
-  );
 
-  if (!confirmDelete) return;
+    if (!confirmDelete) return;
 
-  try {
-    await deleteDocument(documentId);
+    try {
+      await deleteDocument(documentId);
 
-    alert("Document deleted successfully.");
+      alert("Document deleted successfully.");
 
-    loadDocuments();
-  } catch (error) {
-    console.error(error);
+      loadDocuments();
+    } catch (error) {
+      console.error(error);
 
-    alert(
-      error.response?.data?.detail ||
-      "Failed to delete document."
-    );
-  }
-};
+      alert(
+        error.response?.data?.detail ||
+          "Failed to delete document."
+      );
+    }
+  };
 
   return (
     <div style={{ marginTop: "30px" }}>
       <h2>Uploaded Documents</h2>
 
       {/* Search & Filters */}
-
       <div
         style={{
           display: "flex",
@@ -187,13 +199,9 @@ const handleDelete = async (documentId) => {
           <option value="asc">Ascending</option>
         </select>
 
-        <button onClick={applyFilters}>
-          Search
-        </button>
+        <button onClick={applyFilters}>Search</button>
 
-        <button onClick={resetFilters}>
-          Reset
-        </button>
+        <button onClick={resetFilters}>Reset</button>
       </div>
 
       {loading ? (
@@ -222,7 +230,7 @@ const handleDelete = async (documentId) => {
             <tbody>
               {documents.length === 0 ? (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: "center" }}>
+                  <td colSpan="6" style={{ textAlign: "center" }}>
                     No documents found.
                   </td>
                 </tr>
@@ -234,60 +242,61 @@ const handleDelete = async (documentId) => {
                     <td>{(doc.file_size / 1024).toFixed(2)} KB</td>
                     <td>{doc.status}</td>
                     <td>{new Date(doc.uploaded_at).toLocaleString()}</td>
-                     <td>
-  <button
-    title="View"
-    onClick={() => viewDocument(doc.id)}
-    style={{
-      marginRight: "8px",
-      cursor: "pointer",
-    }}
-  >
-    👁️
-  </button>
+                    <td>
+                      <button
+                        title="View"
+                        onClick={() => viewDocument(doc.id)}
+                        style={{
+                          marginRight: "8px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        👁️
+                      </button>
 
-  <button
-    title="Download"
-    onClick={() => downloadDocument(doc.id, doc.filename)}
-    style={{
-      marginRight: "8px",
-      cursor: "pointer",
-    }}
-  >
-    ⬇️
-  </button>
+                      <button
+                        title="Download"
+                        onClick={() => downloadDocument(doc.id, doc.filename)}
+                        style={{
+                          marginRight: "8px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        ⬇️
+                      </button>
 
-  <button
-    title="Process"
-    onClick={() => handleProcess(doc.id)}
-    disabled={
-      doc.status === "Processing" ||
-      doc.status === "Processed"
-    }
-    style={{
-      marginRight: "8px",
-      cursor:
-        doc.status === "Processing" ||
-        doc.status === "Processed"
-          ? "not-allowed"
-          : "pointer",
-    }}
-  >
-    ⚙️
-  </button>
+                      <button
+                        title="Process"
+                        onClick={() => handleProcess(doc.id)}
+                        disabled={
+                          processingId === doc.id ||
+                          doc.status === "Processing" ||
+                          doc.status === "Processed"
+                        }
+                        style={{
+                          marginRight: "8px",
+                          cursor:
+                            processingId === doc.id ||
+                            doc.status === "Processing" ||
+                            doc.status === "Processed"
+                              ? "not-allowed"
+                              : "pointer",
+                        }}
+                      >
+                        {processingId === doc.id ? "⏳" : "⚙️"}
+                      </button>
 
-  <button
-    title="Delete"
-    onClick={() => handleDelete(doc.id)}
-    style={{
-      cursor: "pointer",
-      color: "red",
-    }}
-  >
-    🗑️
-  </button>
-</td>
-
+                      <button
+                        title="Delete"
+                        onClick={() => handleDelete(doc.id)}
+                        style={{
+                          cursor: "pointer",
+                          color: "red",
+                        }}
+                      >
+                        🗑️
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -295,7 +304,6 @@ const handleDelete = async (documentId) => {
           </table>
 
           {/* Pagination */}
-
           <div
             style={{
               marginTop: "20px",

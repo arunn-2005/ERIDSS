@@ -1,4 +1,5 @@
 import axios from "axios";
+import api from "./api";
 
 const API = "http://127.0.0.1:8000/documents";
 
@@ -37,7 +38,6 @@ export const getMyDocuments = async (
     sort = "file_size",
     order = "desc"
 ) => {
-
     const response = await axios.get(
         `${API}/my-documents`,
         {
@@ -59,6 +59,7 @@ export const getMyDocuments = async (
 
     return response.data;
 };
+
 // -----------------------------
 // Download Document
 // -----------------------------
@@ -106,6 +107,7 @@ export const viewDocument = async (documentId) => {
 
   window.open(blobUrl, "_blank");
 };
+
 // -----------------------------
 // Delete Document
 // -----------------------------
@@ -122,14 +124,37 @@ export const deleteDocument = async (documentId) => {
   return response.data;
 };
 
-
-
-import api from "./api";
-
+// -----------------------------
+// 1. Text Extraction
+// -----------------------------
 export const processDocument = async (documentId) => {
   const response = await api.post(
     `/documents/${documentId}/process`
   );
 
   return response.data;
+};
+
+// -----------------------------
+// 2. Entity Extraction
+// -----------------------------
+export const extractEntities = async (documentId) => {
+  const response = await api.post(
+    `/documents/${documentId}/extract-entities`
+  );
+
+  return response.data;
+};
+
+// -----------------------------
+// Full Processing Pipeline (Text + Entities)
+// -----------------------------
+export const runFullDocumentPipeline = async (documentId) => {
+  // Step 1: Text extraction (saves to DB)
+  await processDocument(documentId);
+  
+  // Step 2: Entity extraction (saves to DB)
+  await extractEntities(documentId);
+
+  return { message: "Document processed successfully." };
 };
