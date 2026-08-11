@@ -157,7 +157,7 @@ def extract_document_entities(
                     entity_name=entity_data["entity_name"],
                     normalized_name=entity_data["normalized_name"],
                     entity_type=entity_data["entity_type"],
-                    confidence_score=None
+                    confidence_score=entity_data["confidence_score"]
                 )
 
                 db.add(entity)
@@ -237,7 +237,8 @@ def extract_document_entities(
                     "id": entity.id,
                     "entity_name": entity.entity_name,
                     "normalized_name": entity.normalized_name,
-                    "entity_type": entity.entity_type
+                    "entity_type": entity.entity_type,
+                    "confidence_score": entity.confidence_score
                 }
                 for entity in saved_entities
             ]
@@ -246,23 +247,17 @@ def extract_document_entities(
 
     except Exception as e:
 
-        # ---------------------------------
-        # 13. Mark job failed
-        # ---------------------------------
-
         processing_job.status = "Failed"
-
         processing_job.completed_at = (
             datetime.now(timezone.utc)
         )
-
         processing_job.error_message = str(e)
-
 
         db.commit()
 
+        print("ENTITY EXTRACTION ERROR:", repr(e))
 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Entity extraction failed."
+            detail=str(e)
         )
