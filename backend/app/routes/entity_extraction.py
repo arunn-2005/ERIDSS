@@ -17,6 +17,10 @@ from app.models.processing_job import ProcessingJob
 from app.dependencies.auth import get_current_user
 
 from app.services.entity_extractor import extract_entities
+from app.services.pii_detector import (
+    detect_pii,
+    mask_pii
+)
 
 
 router = APIRouter(
@@ -116,19 +120,31 @@ def extract_document_entities(
     try:
 
         # ---------------------------------
-        # 5. Extract entities
+        # 5. Detect and mask PII
+        # ---------------------------------
+
+        raw_text = extracted_text.extracted_text
+
+        pii_results = detect_pii(raw_text)
+
+        sanitized_text = mask_pii(
+            raw_text,
+            pii_results
+        )
+
+        # ---------------------------------
+        # 6. Extract enterprise entities
         # ---------------------------------
 
         extracted_entities = extract_entities(
-            extracted_text.extracted_text
+            sanitized_text
         )
-
 
         saved_entities = []
 
 
         # ---------------------------------
-        # 6. Process entities
+        # 7. Process entities
         # ---------------------------------
 
         for entity_data in extracted_entities:
@@ -147,7 +163,7 @@ def extract_document_entities(
 
 
             # ---------------------------------
-            # 7. Create entity if new
+            # 8. Create entity if new
             # ---------------------------------
 
             if not entity:
@@ -166,23 +182,25 @@ def extract_document_entities(
 
 
             # ---------------------------------
-            # 8. Check duplicate evidence
+            # 9. Check duplicate evidence
             # ---------------------------------
 
-            existing_evidence = (
-                db.query(EntityEvidence)
-                .filter(
-                    EntityEvidence.entity_id == entity.id,
-                    EntityEvidence.document_id == document.id,
-                    EntityEvidence.source_text
-                    == entity_data["source_text"]
+            for evidence_data in entity_data["evidence"]:
+
+                existing_evidence = (
+                    db.query(EntityEvidence)
+                    .filter(
+                        EntityEvidence.entity_id == entity.id,
+                        EntityEvidence.document_id == document.id,
+                        EntityEvidence.source_text
+                        == evidence_data["source_text"]
+                    )
+                    .first()
                 )
-                .first()
-            )
 
 
             # ---------------------------------
-            # 9. Create evidence
+            # 10. Create evidence
             # ---------------------------------
 
             if not existing_evidence:
@@ -190,7 +208,7 @@ def extract_document_entities(
                 evidence = EntityEvidence(
                     entity_id=entity.id,
                     document_id=document.id,
-                    source_text=entity_data["source_text"]
+                    source_text=evidence_data["source_text"]
                 )
 
                 db.add(evidence)
@@ -201,7 +219,7 @@ def extract_document_entities(
 
 
         # ---------------------------------
-        # 10. Mark job completed
+        # 11. Mark job completed
         # ---------------------------------
 
         processing_job.status = "Completed"
@@ -215,7 +233,7 @@ def extract_document_entities(
 
 
         # ---------------------------------
-        # 11. Refresh
+        # 12. Refresh
         # ---------------------------------
 
         db.refresh(processing_job)
@@ -225,7 +243,7 @@ def extract_document_entities(
 
 
         # ---------------------------------
-        # 12. Return response
+        # 13. Return response
         # ---------------------------------
 
         return {
