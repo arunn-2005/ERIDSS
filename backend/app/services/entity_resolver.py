@@ -23,6 +23,27 @@ ORGANIZATION_SUFFIXES = {
 
 
 # ---------------------------------
+# Entity type normalization
+# ---------------------------------
+
+ENTITY_TYPE_MAPPING = {
+    "software": "technology",
+    "system": "technology",
+    "technology": "technology",
+}
+
+
+def normalize_entity_type(entity_type: str):
+
+    normalized_type = entity_type.lower().strip()
+
+    return ENTITY_TYPE_MAPPING.get(
+        normalized_type,
+        normalized_type
+    )
+
+
+# ---------------------------------
 # Create comparison name
 # ---------------------------------
 
@@ -73,23 +94,31 @@ def are_same_entity(
     entity_two: dict
 ):
 
-    # Don't merge different entity types
+    # Normalize entity types
 
-    if (
+    entity_one_type = normalize_entity_type(
         entity_one["entity_type"]
-        != entity_two["entity_type"]
-    ):
+    )
+
+    entity_two_type = normalize_entity_type(
+        entity_two["entity_type"]
+    )
+
+
+    # Don't merge different normalized types
+
+    if entity_one_type != entity_two_type:
         return False
 
 
     name_one = get_comparison_name(
         entity_one["entity_name"],
-        entity_one["entity_type"]
+        entity_one_type
     )
 
     name_two = get_comparison_name(
         entity_two["entity_name"],
-        entity_two["entity_type"]
+        entity_two_type
     )
 
 
@@ -130,10 +159,14 @@ def create_evidence(entity: dict):
 
 def create_resolved_entity(entity: dict):
 
+    normalized_type = normalize_entity_type(
+        entity["entity_type"]
+    )
+
     return {
         "entity_name": entity["entity_name"],
         "normalized_name": entity["normalized_name"],
-        "entity_type": entity["entity_type"],
+        "entity_type": normalized_type,
         "confidence_score": entity["confidence_score"],
 
         "evidence": [
@@ -151,15 +184,28 @@ def select_canonical_entity(
     new_entity: dict
 ):
 
-    # Prefer longer entity name
+    existing_name = existing_entity["entity_name"]
+
+    new_name = new_entity["entity_name"]
+
+
+    # Prefer longer descriptive name
+
+    if len(new_name) > len(existing_name):
+
+        return new_entity
+
+
+    # If same length, prefer higher confidence
 
     if (
-        len(new_entity["entity_name"])
-        >
-        len(existing_entity["entity_name"])
+        len(new_name) == len(existing_name)
+        and new_entity["confidence_score"]
+        > existing_entity["confidence_score"]
     ):
 
         return new_entity
+
 
     return existing_entity
 
@@ -171,6 +217,7 @@ def select_canonical_entity(
 def resolve_entities(entities: list):
 
     resolved_entities = []
+
 
     for entity in entities:
 
@@ -223,7 +270,7 @@ def resolve_entities(entities: list):
         )
 
 
-        # Update canonical information if needed
+        # Update canonical information
 
         matched_entity["entity_name"] = (
             canonical_entity["entity_name"]
@@ -231,6 +278,12 @@ def resolve_entities(entities: list):
 
         matched_entity["normalized_name"] = (
             canonical_entity["normalized_name"]
+        )
+
+        matched_entity["entity_type"] = (
+            normalize_entity_type(
+                canonical_entity["entity_type"]
+            )
         )
 
         matched_entity["confidence_score"] = max(

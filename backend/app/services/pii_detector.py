@@ -1,4 +1,10 @@
-from presidio_analyzer import AnalyzerEngine
+import re
+
+from presidio_analyzer import (
+    AnalyzerEngine,
+    Pattern,
+    PatternRecognizer
+)
 
 
 # ---------------------------------
@@ -7,6 +13,20 @@ from presidio_analyzer import AnalyzerEngine
 
 analyzer = AnalyzerEngine()
 
+phone_pattern = Pattern(
+    name="international_phone_pattern",
+    regex=r"(?<!\w)(?:\+\d{1,3}[-.\s]?)?(?:\(?\d{2,4}\)?[-.\s]?)?\d{3,5}[-.\s]?\d{3,5}(?!\w)",
+    score=0.85
+)
+
+phone_recognizer = PatternRecognizer(
+    supported_entity="PHONE_NUMBER",
+    patterns=[phone_pattern]
+)
+
+analyzer.registry.add_recognizer(
+    phone_recognizer
+)
 
 # ---------------------------------
 # Supported PII types
@@ -24,6 +44,37 @@ ALLOWED_PII_ENTITIES = {
     "PASSPORT",
     "URL",
     "UK_NHS",
+}
+
+# ---------------------------------
+# Custom sensitive identifier patterns
+# ---------------------------------
+
+CUSTOM_PII_PATTERNS = {
+    "INDIAN_PAN": re.compile(
+        r"\b[A-Z]{5}[0-9]{4}[A-Z]\b",
+        re.IGNORECASE
+    ),
+
+    "TAX_FILE_NUMBER": re.compile(
+        r"\bTFN-\d{3}-\d{3}-\d{3}\b",
+        re.IGNORECASE
+    ),
+
+    "AADHAAR_NUMBER": re.compile(
+        r"\b\d{4}\s\d{4}\s\d{4}\b"
+    ),
+}
+
+PII_PRIORITY = {
+    "EMAIL_ADDRESS": 100,
+    "PHONE_NUMBER": 90,
+    "CREDIT_CARD": 90,
+    "US_BANK_NUMBER": 90,
+    "PASSPORT": 90,
+    "IP_ADDRESS": 85,
+    "URL": 50,
+    "PERSON": 40,
 }
 
 
@@ -51,6 +102,47 @@ MASKED_PII_TYPES = {
 
 MINIMUM_PII_SCORE = 0.5
 
+def is_inside_email(
+    text: str,
+    start: int,
+    end: int
+) -> bool:
+
+    email_pattern = re.compile(
+        r"[A-Za-z0-9._%+-]+"
+        r"@"
+        r"[A-Za-z0-9.-]+"
+        r"\.[A-Za-z]{2,}"
+    )
+
+    for match in email_pattern.finditer(text):
+
+        email_start = match.start()
+        email_end = match.end()
+
+        if (
+            start >= email_start
+            and end <= email_end
+        ):
+            return True
+
+    return False
+
+def detect_custom_pii(text: str):
+    custom_results = []
+
+    for pii_type, pattern in CUSTOM_PII_PATTERNS.items():
+
+        for match in pattern.finditer(text):
+
+            custom_results.append({
+                "pii_type": pii_type,
+                "start": match.start(),
+                "end": match.end(),
+                "score": 1.0
+            })
+
+    return custom_results
 
 # ---------------------------------
 # Detect PII
@@ -68,40 +160,58 @@ def detect_pii(text: str):
     for result in results:
 
         # ---------------------------------
-        # Ignore unsupported PII types
+        # Confidence filtering
         # ---------------------------------
 
-        if result.entity_type not in ALLOWED_PII_ENTITIES:
+        if result.score < 0.5:
             continue
 
 
         # ---------------------------------
-        # Ignore low-confidence results
+        # Keep only allowed PII types
         # ---------------------------------
 
-        if result.score < MINIMUM_PII_SCORE:
+        if (
+            result.entity_type
+            not in ALLOWED_PII_ENTITIES
+            and result.entity_type != "URL"
+        ):
             continue
 
 
-        # Extract the detected value
-        detected_value = text[
-            result.start:result.end
-        ]
-
-
         # ---------------------------------
-        # Validate PERSON detection
+        # Prevent URL fragments inside email
         # ---------------------------------
 
-        if result.entity_type == "PERSON":
+        if result.entity_type == "URL":
 
-            if not is_valid_person_value(
-                detected_value
+            if is_inside_email(
+                text,
+                result.start,
+                result.end
             ):
                 continue
 
 
-        # Store clean PII result
+        # ---------------------------------
+        # Validate PERSON
+        # ---------------------------------
+
+        if result.entity_type == "PERSON":
+
+            person_value = text[
+                result.start:result.end
+            ]
+
+            if not is_valid_person_value(
+                person_value
+            ):
+                continue
+
+
+        # ---------------------------------
+        # Store detected PII
+        # ---------------------------------
 
         pii_results.append({
             "pii_type": result.entity_type,
@@ -110,15 +220,22 @@ def detect_pii(text: str):
             "score": result.score
         })
 
+    # ---------------------------------
+    # Add custom regex-based PII
+    # ---------------------------------
+
+    custom_pii_results = detect_custom_pii(text)
+
+    pii_results.extend(custom_pii_results)
+
 
     # ---------------------------------
-    # Remove overlapping detections
+    # Remove overlapping PII
     # ---------------------------------
 
     pii_results = remove_overlapping_results(
         pii_results
     )
-
 
     return pii_results
 
@@ -129,19 +246,17 @@ def detect_pii(text: str):
 
 def mask_pii(
     text: str,
-    pii_results: list
+    pii_results: list 
 ):
-
     masked_text = text
 
+    # PERSON is preserved for
+    # enterprise entity extraction
+    skip_types = {
+        "PERSON"
+    }
 
-    # ---------------------------------
     # Process from right to left
-    #
-    # This prevents index positions from
-    # changing after text replacement.
-    # ---------------------------------
-
     for result in sorted(
         pii_results,
         key=lambda x: x["start"],
@@ -150,51 +265,20 @@ def mask_pii(
 
         pii_type = result["pii_type"]
 
-
-        # ---------------------------------
-        # Keep PERSON information
-        #
-        # PERSON entities are useful for
-        # enterprise entity extraction.
-        # ---------------------------------
-
-        if pii_type == "PERSON":
+        # Keep person names visible
+        if pii_type in skip_types:
             continue
-
-
-        # ---------------------------------
-        # Only mask configured PII types
-        # ---------------------------------
-
-        if pii_type not in MASKED_PII_TYPES:
-            continue
-
 
         start = result["start"]
         end = result["end"]
 
-
-        # Original detected PII value
-
-        original_value = text[start:end]
-
-
-        # Get replacement value
-
-        replacement = get_pii_replacement(
-            pii_type=pii_type,
-            original_value=original_value
-        )
-
-
-        # Replace PII
+        replacement = f"[{pii_type}]"
 
         masked_text = (
             masked_text[:start]
             + replacement
             + masked_text[end:]
         )
-
 
     return masked_text
 
@@ -206,61 +290,40 @@ def mask_pii(
 def remove_overlapping_results(
     pii_results: list
 ):
-
-    # ---------------------------------
-    # Sort by:
-    #
-    # 1. Start position
-    # 2. Longer detection first
-    # 3. Higher confidence first
-    # ---------------------------------
-
+    # Higher score first.
+    # If scores are equal, longer matches first.
     sorted_results = sorted(
         pii_results,
         key=lambda x: (
-            x["start"],
+            -x["score"],
             -(x["end"] - x["start"]),
-            -x["score"]
+            x["start"]
         )
     )
 
-
     selected_results = []
-
 
     for result in sorted_results:
 
         overlap = False
 
-
         for selected in selected_results:
-
-            # ---------------------------------
-            # Check whether two ranges overlap
-            # ---------------------------------
 
             if (
                 result["start"] < selected["end"]
                 and result["end"] > selected["start"]
             ):
-
                 overlap = True
                 break
 
-
-        # ---------------------------------
-        # Keep only non-overlapping result
-        # ---------------------------------
-
         if not overlap:
+            selected_results.append(result)
 
-            selected_results.append(
-                result
-            )
-
-
-    return selected_results
-
+    # Sort final output by original text position
+    return sorted(
+        selected_results,
+        key=lambda x: x["start"]
+    )
 
 # ---------------------------------
 # Get replacement for detected PII

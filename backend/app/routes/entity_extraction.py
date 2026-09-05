@@ -22,6 +22,9 @@ from app.services.pii_detector import (
     mask_pii
 )
 
+from app.services.canonical_entity_resolver import (
+    find_or_create_canonical_entity
+)
 
 router = APIRouter(
     prefix="/documents",
@@ -166,10 +169,17 @@ def extract_document_entities(
             # 8. Create entity if new
             # ---------------------------------
 
-            if not entity:
+            # 8. Resolve canonical entity
+            canonical_entity = find_or_create_canonical_entity(
+                db=db,
+                entity_data=entity_data
+            )
 
+            # 9. Create entity if new
+            if not entity:
                 entity = Entity(
                     document_id=document.id,
+                    canonical_entity_id=canonical_entity.id,
                     entity_name=entity_data["entity_name"],
                     normalized_name=entity_data["normalized_name"],
                     entity_type=entity_data["entity_type"],
@@ -177,15 +187,33 @@ def extract_document_entities(
                 )
 
                 db.add(entity)
-
                 db.flush()
+
+            else:
+                # Existing entity may have been created before
+                # canonical resolution was implemented.
+                if entity.canonical_entity_id is None:
+                    entity.canonical_entity_id = canonical_entity.id
+
+                elif entity.canonical_entity_id is None:
+
+                        canonical_entity = find_or_create_canonical_entity(
+                            db=db,
+                            entity_data=entity_data
+                         )
+
+                        entity.canonical_entity_id = canonical_entity.id
 
 
             # ---------------------------------
-            # 9. Check duplicate evidence
+            # 9. Process entity evidence
             # ---------------------------------
 
             for evidence_data in entity_data["evidence"]:
+
+                # ---------------------------------
+                # Check duplicate evidence
+                # ---------------------------------
 
                 existing_evidence = (
                     db.query(EntityEvidence)
@@ -198,20 +226,19 @@ def extract_document_entities(
                     .first()
                 )
 
+                # ---------------------------------
+                # Create evidence if new
+                # ---------------------------------
 
-            # ---------------------------------
-            # 10. Create evidence
-            # ---------------------------------
+                if not existing_evidence:
 
-            if not existing_evidence:
+                    evidence = EntityEvidence(
+                        entity_id=entity.id,
+                        document_id=document.id,
+                        source_text=evidence_data["source_text"]
+                    )
 
-                evidence = EntityEvidence(
-                    entity_id=entity.id,
-                    document_id=document.id,
-                    source_text=evidence_data["source_text"]
-                )
-
-                db.add(evidence)
+                    db.add(evidence)
 
 
             if entity not in saved_entities:
@@ -256,7 +283,8 @@ def extract_document_entities(
                     "entity_name": entity.entity_name,
                     "normalized_name": entity.normalized_name,
                     "entity_type": entity.entity_type,
-                    "confidence_score": entity.confidence_score
+                    "confidence_score": entity.confidence_score,
+                    "canonical_entity_id": entity.canonical_entity_id
                 }
                 for entity in saved_entities
             ]

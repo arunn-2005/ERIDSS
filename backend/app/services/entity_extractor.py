@@ -3,7 +3,7 @@ import re
 from gliner import GLiNER
 
 from app.services.entity_resolver import resolve_entities
-
+from app.services.entity_type_normalizer import normalize_entity_type
 
 MODEL_NAME = "gliner-community/gliner_small-v2.5"
 
@@ -40,7 +40,15 @@ PII_PLACEHOLDERS = {
     "LOCATION",
     "ACCOUNT_NUMBER",
     "GOVERNMENT_ID",
-    "CREDIT_CARD"
+    "CREDIT_CARD",
+    "INDIAN_PAN",
+    "TAX_FILE_NUMBER",
+    "AADHAAR_NUMBER",
+    "US_SSN",
+    "US_BANK_NUMBER",
+    "US_DRIVER_LICENSE",
+    "PASSPORT",
+    "UK_NHS",
 }
 
 GENERIC_ENTITIES = {
@@ -134,7 +142,20 @@ def is_valid_entity(
 
 
     # ---------------------------------
-    # 5. Remove numeric-only entities
+    # 5. Reject entities containing
+    # PII placeholder patterns
+    # ---------------------------------
+
+    for placeholder in PII_PLACEHOLDERS:
+
+        placeholder_pattern = f"[{placeholder}]"
+
+        if placeholder_pattern.lower() in cleaned_name.lower():
+            return False
+
+
+    # ---------------------------------
+    # 6. Remove numeric-only entities
     # ---------------------------------
 
     if cleaned_name.isdigit():
@@ -142,7 +163,7 @@ def is_valid_entity(
 
 
     # ---------------------------------
-    # 6. Remove generic entity names
+    # 7. Remove generic entity names
     # ---------------------------------
 
     if cleaned_name.lower() in GENERIC_ENTITIES:
@@ -206,7 +227,11 @@ def extract_entities(text):
 
         entity_name = entity["text"]
 
-        entity_type = entity["label"]
+        raw_entity_type = entity["label"]
+
+        entity_type = normalize_entity_type(
+            raw_entity_type
+        )
 
         confidence_score = entity["score"]
 
@@ -290,6 +315,7 @@ def extract_entities(text):
             "entity_name": cleaned_entity_name,
             "normalized_name": normalized_name,
             "entity_type": entity_type,
+            "raw_entity_type": raw_entity_type,
             "confidence_score": confidence_score,
             "source_text": source_text,
             "start": start,

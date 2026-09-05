@@ -1,41 +1,19 @@
-# app/models/entity.py
-
 import uuid
 
-from sqlalchemy import (
-    Column,
-    String,
-    Float,
-    ForeignKey,
-    DateTime
-)
-
+from sqlalchemy import Column, String, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
 from app.database.database import Base
 
 
-class Entity(Base):
-
-    __tablename__ = "entities"
+class CanonicalEntity(Base):
+    __tablename__ = "canonical_entities"
 
     id = Column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4
-    )
-
-    document_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("documents.id"),
-        nullable=False
-    )
-
-    canonical_entity_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("canonical_entities.id"),
-        nullable=True
     )
 
     entity_name = Column(
@@ -53,12 +31,13 @@ class Entity(Base):
         nullable=False
     )
 
-    confidence_score = Column(
-        Float,
-        nullable=True
-    )
-
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now()
+    )
+
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now()
     )
