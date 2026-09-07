@@ -1,10 +1,5 @@
+import pytest
 from gliner import GLiNER
-
-
-model = GLiNER.from_pretrained(
-    "gliner-community/gliner_small-v2.5"
-)
-
 
 ENTITY_LABELS = [
     "person",
@@ -26,8 +21,7 @@ ENTITY_LABELS = [
     "process",
 ]
 
-
-text = """
+CONTRACT_TEXT = """
 CONTRACT AGREEMENT
 
 This Vendor Services Agreement is entered into between ABC Technologies Pvt. Ltd., headquartered in Chennai, and XYZ Corporation, headquartered in Bangalore.
@@ -61,20 +55,41 @@ All confidential business information, customer information, and employee inform
 Any dispute arising from this agreement will be subject to the jurisdiction of the courts in Chennai.
 """
 
+@pytest.fixture(scope="module")
+def gliner_model():
+    return GLiNER.from_pretrained("gliner-community/gliner_small-v2.5")
 
-entities = model.predict_entities(
-    text,
-    ENTITY_LABELS,
-    threshold=0.5
-)
-
-
-for entity in entities:
-
-    print(
-        entity["text"],
-        "=>",
-        entity["label"],
-        "=>",
-        entity["score"]
+def test_gliner_predicts_contract_entities(gliner_model):
+    entities = gliner_model.predict_entities(
+        CONTRACT_TEXT,
+        ENTITY_LABELS,
+        threshold=0.5
     )
+
+    assert isinstance(entities, list)
+    assert len(entities) > 0
+
+    # Ensure schema output integrity
+    first_entity = entities[0]
+    assert "text" in first_entity
+    assert "label" in first_entity
+    assert "score" in first_entity
+    assert first_entity["score"] >= 0.5
+
+def test_gliner_extracts_expected_domain_entities(gliner_model):
+    entities = gliner_model.predict_entities(
+        CONTRACT_TEXT,
+        ENTITY_LABELS,
+        threshold=0.5
+    )
+
+    found_texts = [e["text"].lower() for e in entities]
+    labels_found = {e["label"] for e in entities}
+
+    # Verify key enterprise entities are recognized
+    assert any("abc technologies" in t for t in found_texts)
+    assert any("ravi kumar" in t for t in found_texts)
+    assert any("chennai" in t for t in found_texts)
+
+    # Verify relevant enterprise schema labels are triggered
+    assert any(label in labels_found for label in ["person", "organization", "location", "vendor", "project"])

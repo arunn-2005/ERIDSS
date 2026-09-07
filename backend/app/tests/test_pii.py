@@ -1,7 +1,7 @@
+import pytest
 from app.services.pii_detector import detect_pii, mask_pii
 
-
-text = """
+SAMPLE_TEXT = """
 ENTERPRISE TECHNOLOGY MIGRATION AND RISK ASSESSMENT REPORT
 
 Document ID: ERIDSS-TEST-2026-001
@@ -26,7 +26,7 @@ Monitoring portal: https://monitoring.example.com/project-hyperion
 
 The procurement team recorded the following sensitive identifiers for the vendor onboarding process:
 Indian PAN: ABCDE1234F
-Aadhaar Number: 1234 5678 9012
+Aadhaar Number: [Aadhaar Redacted]
 Tax File Number: TFN-123-456-789
 Passport Number: A1234567
 
@@ -57,33 +57,23 @@ Phone: +1 555-234-5678
 """
 
 
-results = detect_pii(text)
+def test_detect_pii_finds_entities():
+    results = detect_pii(SAMPLE_TEXT)
+    assert isinstance(results, list)
+    assert len(results) > 0
+
+    pii_types = {item["pii_type"] for item in results}
+    assert any(expected in pii_types for expected in ["EMAIL_ADDRESS", "PHONE_NUMBER", "IP_ADDRESS"])
 
 
-print("===== DETECTED PII =====")
+def test_mask_pii_redacts_sensitive_data():
+    results = detect_pii(SAMPLE_TEXT)
+    sanitized_text = mask_pii(SAMPLE_TEXT, results)
 
-for result in results:
-
-    print(
-        result["pii_type"],
-        "=>",
-        text[result["start"]:result["end"]],
-        "=>",
-        result["score"]
-    )
-
-
-sanitized_text = mask_pii(
-    text,
-    results
-)
-
-
-print("\n===== ORIGINAL TEXT =====")
-
-print(text)
-
-
-print("\n===== SANITIZED TEXT =====")
-
-print(sanitized_text)
+    assert isinstance(sanitized_text, str)
+    # Validate that sensitive data detected by Presidio is purged
+    assert "sophia.chen@example.com" not in sanitized_text
+    assert "+91 9876543210" not in sanitized_text
+    assert "security-team@example.org" not in sanitized_text
+    # Validate that masking tokens were injected
+    assert any(token in sanitized_text for token in ["[PHONE_NUMBER]", "[EMAIL_ADDRESS]", "<PHONE_NUMBER>", "<EMAIL_ADDRESS>"])
