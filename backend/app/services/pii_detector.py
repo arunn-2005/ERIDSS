@@ -15,8 +15,8 @@ analyzer = AnalyzerEngine()
 
 phone_pattern = Pattern(
     name="international_phone_pattern",
-    regex=r"(?<!\w)(?:\+\d{1,3}[-.\s]?)?(?:\(?\d{2,4}\)?[-.\s]?)?\d{3,5}[-.\s]?\d{3,5}(?!\w)",
-    score=0.85
+    regex=r"(?<![\w-])(?:\+\d{1,3}[-.\s]?)?(?:\(\d{2,4}\)[-.\s]?)?\d{3,4}[-.\s]?\d{3,4}(?![\w-])",
+    score=0.95
 )
 
 phone_recognizer = PatternRecognizer(
@@ -27,6 +27,22 @@ phone_recognizer = PatternRecognizer(
 analyzer.registry.add_recognizer(
     phone_recognizer
 )
+
+indian_phone_pattern = Pattern(
+    name="indian_phone_pattern",
+    regex=r"(?<!\w)\+91[\s.-]?[6-9]\d{9}(?!\w)",
+    score=1.0
+)
+
+indian_phone_recognizer = PatternRecognizer(
+    supported_entity="PHONE_NUMBER",
+    patterns=[indian_phone_pattern]
+)
+
+analyzer.registry.add_recognizer(
+    indian_phone_recognizer
+)
+
 
 # ---------------------------------
 # Supported PII types
@@ -63,6 +79,26 @@ CUSTOM_PII_PATTERNS = {
 
     "AADHAAR_NUMBER": re.compile(
         r"\b\d{4}\s\d{4}\s\d{4}\b"
+    ),
+
+    # US Social Security Number
+    "US_SSN": re.compile(
+        r"(?<!\d)\d{3}-\d{2}-\d{4}(?!\d)"
+    ),
+
+    # Passport format used by this ERIDSS test
+    "PASSPORT": re.compile(
+        r"(?i)(?<![A-Z0-9])[A-Z]\d{7}(?![A-Z0-9])"
+    ),
+
+    # Corporate account number when explicitly labelled
+    "US_BANK_NUMBER": re.compile(
+        r"(?i)(?<=account number:\s)\d{8,20}\b"
+    ),
+
+    # Bank number when explicitly labelled
+    "CORPORATE_BANK_NUMBER": re.compile(
+        r"(?i)(?<=US Bank Number:\s)\d{8,20}\b"
     ),
 }
 
@@ -144,6 +180,73 @@ def detect_custom_pii(text: str):
 
     return custom_results
 
+def detect_contextual_pii(text: str):
+    results = []
+
+    # ---------------------------------
+    # Corporate account numbers
+    # ---------------------------------
+
+    account_pattern = re.compile(
+        r"(?i)\b(?:account\s+number|account\s+no\.?|a/c)"
+        r"\s*[:#-]?\s*(\d{8,20})\b"
+    )
+
+    for match in account_pattern.finditer(text):
+
+        number_start = match.start(1)
+        number_end = match.end(1)
+
+        results.append({
+            "pii_type": "US_BANK_NUMBER",
+            "start": number_start,
+            "end": number_end,
+            "score": 1.0
+        })
+
+    # ---------------------------------
+    # Explicit US Bank Number
+    # ---------------------------------
+
+    bank_pattern = re.compile(
+        r"(?i)\bUS\s+Bank\s+Number\s*:\s*(\d{8,20})\b"
+    )
+
+    for match in bank_pattern.finditer(text):
+
+        number_start = match.start(1)
+        number_end = match.end(1)
+
+        results.append({
+            "pii_type": "US_BANK_NUMBER",
+            "start": number_start,
+            "end": number_end,
+            "score": 1.0
+        })
+
+    return results
+
+def is_valid_phone_value(text: str, start: int, end: int) -> bool:
+    value = text[start:end].strip()
+
+    # Remove formatting characters to count digits
+    digits = re.sub(r"\D", "", value)
+
+    # A normal phone number should contain at least 10 digits
+    if len(digits) < 10:
+        return False
+
+    # Reject date/document-ID-like patterns such as:
+    # 2026-001
+    if re.fullmatch(r"\d{4}-\d{3}", value):
+        return False
+
+    # Reject obvious numeric identifiers that are too short
+    if len(digits) < 10:
+        return False
+
+    return True
+
 # ---------------------------------
 # Detect PII
 # ---------------------------------
@@ -194,6 +297,19 @@ def detect_pii(text: str):
 
 
         # ---------------------------------
+        # Validate PHONE_NUMBER
+        # ---------------------------------
+
+        if result.entity_type == "PHONE_NUMBER":
+
+            if not is_valid_phone_value(
+                text,
+                result.start,
+                result.end
+            ):
+                continue
+
+        # ---------------------------------
         # Validate PERSON
         # ---------------------------------
 
@@ -227,6 +343,10 @@ def detect_pii(text: str):
     custom_pii_results = detect_custom_pii(text)
 
     pii_results.extend(custom_pii_results)
+
+    contextual_pii_results = detect_contextual_pii(text)
+
+    pii_results.extend(contextual_pii_results)
 
 
     # ---------------------------------
