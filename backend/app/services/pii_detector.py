@@ -81,34 +81,23 @@ CUSTOM_PII_PATTERNS = {
         r"\b\d{4}\s\d{4}\s\d{4}\b"
     ),
 
-    # US Social Security Number
     "US_SSN": re.compile(
         r"(?<!\d)\d{3}-\d{2}-\d{4}(?!\d)"
-    ),
-
-    # Passport format used by this ERIDSS test
-    "PASSPORT": re.compile(
-        r"(?i)(?<![A-Z0-9])[A-Z]\d{7}(?![A-Z0-9])"
-    ),
-
-    # Corporate account number when explicitly labelled
-    "US_BANK_NUMBER": re.compile(
-        r"(?i)(?<=account number:\s)\d{8,20}\b"
-    ),
-
-    # Bank number when explicitly labelled
-    "CORPORATE_BANK_NUMBER": re.compile(
-        r"(?i)(?<=US Bank Number:\s)\d{8,20}\b"
     ),
 }
 
 PII_PRIORITY = {
     "EMAIL_ADDRESS": 100,
-    "PHONE_NUMBER": 90,
-    "CREDIT_CARD": 90,
+    "CREDIT_CARD": 98,
+    "PHONE_NUMBER": 95,
+    "PASSPORT": 92,
+    "US_DRIVER_LICENSE": 92,
     "US_BANK_NUMBER": 90,
-    "PASSPORT": 90,
+    "INDIAN_PAN": 90,
+    "AADHAAR_NUMBER": 90,
+    "TAX_FILE_NUMBER": 90,
     "IP_ADDRESS": 85,
+    "UK_NHS": 85,
     "URL": 50,
     "PERSON": 40,
 }
@@ -129,6 +118,9 @@ MASKED_PII_TYPES = {
     "PASSPORT",
     "URL",
     "UK_NHS",
+    "INDIAN_PAN",
+    "AADHAAR_NUMBER",
+    "TAX_FILE_NUMBER",
 }
 
 
@@ -180,8 +172,104 @@ def detect_custom_pii(text: str):
 
     return custom_results
 
+def detect_email_pii(text: str):
+    results = []
+
+    email_pattern = re.compile(
+        r"\b[A-Za-z0-9._%+-]+"
+        r"@[A-Za-z0-9.-]+"
+        r"\.[A-Za-z]{2,}\b"
+    )
+
+    for match in email_pattern.finditer(text):
+        results.append({
+            "pii_type": "EMAIL_ADDRESS",
+            "start": match.start(),
+            "end": match.end(),
+            "score": 1.0
+        })
+
+    return results
+
+def detect_phone_pii(text: str):
+    results = []
+
+    phone_pattern = re.compile(
+        r"(?<![\w-])"
+        r"(?:\+\d{1,3}[-.\s]?)?"
+        r"\d{3}[-.\s]?\d{3}[-.\s]?\d{4}"
+        r"(?![\w-])"
+    )
+
+    for match in phone_pattern.finditer(text):
+
+        value = match.group()
+
+        if not is_valid_phone_value(
+            text,
+            match.start(),
+            match.end()
+        ):
+            continue
+
+        results.append({
+            "pii_type": "PHONE_NUMBER",
+            "start": match.start(),
+            "end": match.end(),
+            "score": 1.0
+        })
+
+    return results
+
+def detect_credit_card_pii(text: str):
+    results = []
+
+    credit_card_pattern = re.compile(
+        r"(?<!\d)"
+        r"(?:\d{4}[-\s]?){3}\d{4}"
+        r"(?!\d)"
+    )
+
+    for match in credit_card_pattern.finditer(text):
+
+        value = match.group()
+
+        digits = re.sub(r"\D", "", value)
+
+        if len(digits) not in {13, 14, 15, 16, 19}:
+            continue
+
+        results.append({
+            "pii_type": "CREDIT_CARD",
+            "start": match.start(),
+            "end": match.end(),
+            "score": 1.0
+        })
+
+    return results
+
 def detect_contextual_pii(text: str):
     results = []
+
+    # ---------------------------------
+    # Passport Number
+    # ---------------------------------
+
+    passport_pattern = re.compile(
+        r"(?i)\bPassport\s+Number\s*:\s*([A-Z]\d{7})\b"
+    )
+
+    for match in passport_pattern.finditer(text):
+
+        number_start = match.start(1)
+        number_end = match.end(1)
+
+        results.append({
+            "pii_type": "PASSPORT",
+            "start": number_start,
+            "end": number_end,
+            "score": 1.0
+        })
 
     # ---------------------------------
     # Corporate account numbers
@@ -266,7 +354,7 @@ def detect_pii(text: str):
         # Confidence filtering
         # ---------------------------------
 
-        if result.score < 0.5:
+        if result.score < MINIMUM_PII_SCORE:
             continue
 
 
@@ -340,9 +428,45 @@ def detect_pii(text: str):
     # Add custom regex-based PII
     # ---------------------------------
 
+    # ---------------------------------
+    # Add explicit email detection
+    # ---------------------------------
+
+    email_pii_results = detect_email_pii(text)
+
+    pii_results.extend(email_pii_results)
+
+
+    # ---------------------------------
+    # Add explicit phone detection
+    # ---------------------------------
+
+    phone_pii_results = detect_phone_pii(text)
+
+    pii_results.extend(phone_pii_results)
+
+
+    # ---------------------------------
+    # Add explicit credit card detection
+    # ---------------------------------
+
+    credit_card_pii_results = detect_credit_card_pii(text)
+
+    pii_results.extend(credit_card_pii_results)
+
+
+    # ---------------------------------
+    # Add custom regex-based PII
+    # ---------------------------------
+
     custom_pii_results = detect_custom_pii(text)
 
     pii_results.extend(custom_pii_results)
+
+
+    # ---------------------------------
+    # Add contextual PII
+    # ---------------------------------
 
     contextual_pii_results = detect_contextual_pii(text)
 
@@ -357,6 +481,10 @@ def detect_pii(text: str):
         pii_results
     )
 
+    pii_results = remove_duplicate_results(
+        pii_results
+    )
+
     return pii_results
 
 
@@ -364,35 +492,29 @@ def detect_pii(text: str):
 # Mask sensitive PII
 # ---------------------------------
 
-def mask_pii(
-    text: str,
-    pii_results: list 
-):
+def mask_pii(text: str, pii_results: list):
     masked_text = text
 
-    # PERSON is preserved for
-    # enterprise entity extraction
-    skip_types = {
-        "PERSON"
-    }
-
-    # Process from right to left
     for result in sorted(
         pii_results,
         key=lambda x: x["start"],
         reverse=True
     ):
-
         pii_type = result["pii_type"]
 
-        # Keep person names visible
-        if pii_type in skip_types:
+        if pii_type not in MASKED_PII_TYPES:
+            continue
+
+        if result.get("score", 0.0) < MINIMUM_PII_SCORE:
             continue
 
         start = result["start"]
         end = result["end"]
 
-        replacement = f"[{pii_type}]"
+        replacement = get_pii_replacement(
+            pii_type,
+            text[start:end]
+        )
 
         masked_text = (
             masked_text[:start]
@@ -402,48 +524,82 @@ def mask_pii(
 
     return masked_text
 
-
 # ---------------------------------
 # Remove overlapping PII detections
 # ---------------------------------
 
-def remove_overlapping_results(
-    pii_results: list
-):
-    # Higher score first.
-    # If scores are equal, longer matches first.
+def remove_overlapping_results(pii_results: list):
+    """
+    Remove overlapping PII detections.
+
+    When multiple PII recognizers detect overlapping text,
+    the detection with the higher priority wins.
+
+    If priorities are equal, the longer detection wins.
+    """
+
     sorted_results = sorted(
         pii_results,
-        key=lambda x: (
-            -x["score"],
-            -(x["end"] - x["start"]),
-            x["start"]
-        )
+        key=lambda result: (
+            PII_PRIORITY.get(result["pii_type"], 0),
+            result["end"] - result["start"]
+        ),
+        reverse=True
     )
 
     selected_results = []
 
     for result in sorted_results:
+        start = result["start"]
+        end = result["end"]
 
-        overlap = False
+        overlaps = False
 
         for selected in selected_results:
+            selected_start = selected["start"]
+            selected_end = selected["end"]
 
-            if (
-                result["start"] < selected["end"]
-                and result["end"] > selected["start"]
-            ):
-                overlap = True
+            if start < selected_end and end > selected_start:
+                overlaps = True
                 break
 
-        if not overlap:
+        if not overlaps:
             selected_results.append(result)
 
-    # Sort final output by original text position
     return sorted(
         selected_results,
-        key=lambda x: x["start"]
+        key=lambda result: result["start"]
     )
+
+def remove_duplicate_results(pii_results: list):
+    """
+    Remove exact duplicate PII detections.
+
+    Detections are considered duplicates only when
+    they have the same PII type and exactly the same
+    start/end positions.
+
+    Separate occurrences of the same value are preserved.
+    """
+
+    unique_results = []
+    seen = set()
+
+    for result in pii_results:
+
+        key = (
+            result["pii_type"],
+            result["start"],
+            result["end"]
+        )
+
+        if key in seen:
+            continue
+
+        seen.add(key)
+        unique_results.append(result)
+
+    return unique_results
 
 # ---------------------------------
 # Get replacement for detected PII
@@ -455,36 +611,19 @@ def get_pii_replacement(
 ):
 
     replacements = {
-
-        "EMAIL_ADDRESS":
-            "[EMAIL_ADDRESS]",
-
-        "PHONE_NUMBER":
-            "[PHONE_NUMBER]",
-
-        "IP_ADDRESS":
-            "[IP_ADDRESS]",
-
-        "URL":
-            "[URL]",
-
-        "CREDIT_CARD":
-            "[CREDIT_CARD]",
-
-        "US_SSN":
-            "[SSN]",
-
-        "US_BANK_NUMBER":
-            "[ACCOUNT_NUMBER]",
-
-        "US_DRIVER_LICENSE":
-            "[GOVERNMENT_ID]",
-
-        "PASSPORT":
-            "[PASSPORT]",
-
-        "UK_NHS":
-            "[GOVERNMENT_ID]",
+        "EMAIL_ADDRESS": "[EMAIL_ADDRESS]",
+        "PHONE_NUMBER": "[PHONE_NUMBER]",
+        "IP_ADDRESS": "[IP_ADDRESS]",
+        "URL": "[URL]",
+        "CREDIT_CARD": "[CREDIT_CARD]",
+        "US_SSN": "[SSN]",
+        "US_BANK_NUMBER": "[ACCOUNT_NUMBER]",
+        "US_DRIVER_LICENSE": "[GOVERNMENT_ID]",
+        "PASSPORT": "[PASSPORT]",
+        "UK_NHS": "[GOVERNMENT_ID]",
+        "INDIAN_PAN": "[INDIAN_PAN]",
+        "AADHAAR_NUMBER": "[AADHAAR_NUMBER]",
+        "TAX_FILE_NUMBER": "[TAX_FILE_NUMBER]",
     }
 
 

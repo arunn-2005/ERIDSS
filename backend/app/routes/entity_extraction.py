@@ -135,6 +135,24 @@ def extract_document_entities(
             pii_results
         )
 
+        results = detect_pii(raw_text)
+
+        print("===== DETECTED PII =====")
+
+        for result in results:
+            print(
+                result["pii_type"],
+                "=>",
+                raw_text[result["start"]:result["end"]],
+                "=>",
+                result["score"]
+    )
+
+        print("PII DETECTED:", len(pii_results))
+        print("SANITIZED TEXT:")
+        print(sanitized_text)
+
+
         # ---------------------------------
         # 6. Extract enterprise entities
         # ---------------------------------
@@ -166,17 +184,21 @@ def extract_document_entities(
 
 
             # ---------------------------------
-            # 8. Create entity if new
+            # 8. Resolve canonical entity
             # ---------------------------------
 
-            # 8. Resolve canonical entity
             canonical_entity = find_or_create_canonical_entity(
                 db=db,
                 entity_data=entity_data
             )
 
+
+            # ---------------------------------
             # 9. Create entity if new
+            # ---------------------------------
+
             if not entity:
+
                 entity = Entity(
                     document_id=document.id,
                     canonical_entity_id=canonical_entity.id,
@@ -190,19 +212,9 @@ def extract_document_entities(
                 db.flush()
 
             else:
-                # Existing entity may have been created before
-                # canonical resolution was implemented.
+
                 if entity.canonical_entity_id is None:
                     entity.canonical_entity_id = canonical_entity.id
-
-                elif entity.canonical_entity_id is None:
-
-                        canonical_entity = find_or_create_canonical_entity(
-                            db=db,
-                            entity_data=entity_data
-                         )
-
-                        entity.canonical_entity_id = canonical_entity.id
 
 
             # ---------------------------------
