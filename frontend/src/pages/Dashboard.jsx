@@ -35,13 +35,13 @@ function Dashboard() {
 
         <div className="stat-card">
           <span className="stat-title">Documents</span>
-          <h2>0</h2>
+          <h2>5</h2>
           <p>Uploaded Documents</p>
         </div>
 
         <div className="stat-card">
           <span className="stat-title">Entities</span>
-          <h2>0</h2>
+          <h2>118</h2>
           <p>Entities Extracted</p>
         </div>
 
