@@ -1,18 +1,70 @@
+import pytest
 from app.services.pii_detector import detect_pii, mask_pii
 
 
 text = """
-Notice of Vendor Non-Compliance: On August 14, 2024, an audit of the Data Ingestion Pipeline managed by Apex Global Solutions revealed multiple critical policy violations. The primary project lead, Rajesh Sharma (Employee ID: EMP-8821), operating under the Enterprise Risk Management division, shared unencrypted authentication credentials via email to rajesh.sharma@apexsol.co.in and cc'd senior auditor Clara Vance at cvance.audits@securenet.org. Emergency technical escalations were routed directly to mobile contact +91 98450 23149, with a secondary international callback logged at +1 (555) 319-7740.
+ENTERPRISE TECHNOLOGY MIGRATION AND RISK ASSESSMENT REPORT
 
-Financial clearance documents submitted for the Q3 Oracle Cloud Migration contract (valued at $1,450,000) contained exposed tax identifiers, specifically corporate PAN number AAACR1234K and individual Aadhaar reference 4532 8901 2345. Additionally, the billing terminal logged payments originating from credit card number 4111 2024 9871 0042 (Exp: 11/27, CVV: 481) linked to a billing address at Flat 4B, Green Valley Heights, MG Road, Bengaluru, Karnataka 560001. System telemetry logs confirmed direct SSH access into the production server at IP address 192.168.10.45, where database admin credentials using password hash $argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ... were stored in plain text. Immediate remediation requires re-evaluating SLA Tier-1 agreements under the Cyber Threat Governance policy before September 1, 2024.
+Document ID: ERIDSS-TEST-2026-001
+Classification: Confidential
+
+Project Hyperion is an enterprise modernization initiative led by the Global Clearing & Enterprise Modernization Division.
+
+The project is managed by Sophia Chen, Senior Technology Program Manager. Sophia Chen coordinates with Nexus Cloud Solutions LLC and CloudScale Systems GmbH for infrastructure and application modernization activities.
+
+The current architecture uses Apache Kafka for event streaming, Kubernetes for container orchestration, and PostgreSQL for transactional data storage. The Core Settlement Pipeline depends on Apache Kafka and PostgreSQL for processing settlement transactions.
+
+Nexus Cloud Solutions LLC is responsible for the API gateway modernization work. CloudScale Systems GmbH provides Kubernetes infrastructure support.
+
+The project team is also evaluating PostgreSQL Core as part of the database modernization program. The Enterprise Data Division is responsible for reviewing the migration strategy and approving the final architecture.
+
+For project communications, Sophia Chen can be contacted at sophia.chen@example.com or +91 9876543210.
+
+The infrastructure administrator reported the following server information:
+Server IP address: 192.168.1.25
+Backup server IP address: 10.20.30.40
+Monitoring portal: https://monitoring.example.com/project-hyperion
+
+The procurement team recorded the following sensitive identifiers for the vendor onboarding process:
+Indian PAN: ABCDE1234F
+Aadhaar Number: 1234 5678 9012
+Tax File Number: TFN-123-456-789
+Passport Number: A1234567
+
+The finance team also recorded a test corporate account number: 1234567890123456.
+
+The compliance team maintains the following records:
+US SSN: 123-45-6789
+US Bank Number: 123456789
+US Driver License: D1234567
+UK NHS Number: 943 476 5919
+Credit Card Number: 4111 1111 1111 1111
+
+During the migration review, the team identified the following risks:
+
+1. Dependency on Apache Kafka availability may affect the Core Settlement Pipeline.
+2. Kubernetes configuration errors may interrupt application services.
+3. PostgreSQL migration failures may affect transaction processing.
+4. Vendor service outages could delay Project Hyperion.
+5. Inadequate access controls could expose confidential enterprise information.
+
+The Global Clearing & Enterprise Modernization Division will conduct a final architecture review before production deployment.
+
+The review will involve Sophia Chen, Nexus Cloud Solutions LLC, CloudScale Systems GmbH, the Enterprise Data Division, and the infrastructure operations team.
+
+Additional contact information:
+Email: security-team@example.org
+Phone: +1 555-234-5678
 """
 
 
 results = detect_pii(text)
 
+
 print("===== DETECTED PII =====")
 
 for result in results:
+
     print(
         result["pii_type"],
         "=>",
@@ -27,9 +79,11 @@ sanitized_text = mask_pii(
     results
 )
 
+
 print("\n===== ORIGINAL TEXT =====")
 
 print(text)
+
 
 print("\n===== SANITIZED TEXT =====")
 
