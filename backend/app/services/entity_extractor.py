@@ -5,11 +5,15 @@ from gliner import GLiNER
 from app.services.entity_resolver import resolve_entities
 from app.services.entity_type_normalizer import normalize_entity_type
 
-MODEL_NAME = "gliner-community/gliner_small-v2.5"
-
-
+MODEL_NAME = "gliner-community/gliner_medium-v2.5"
 model = GLiNER.from_pretrained(MODEL_NAME)
 
+# ---------------------------------
+# Text chunking configuration
+# ---------------------------------
+
+CHUNK_SIZE = 250
+CHUNK_OVERLAP = 50
 
 ENTITY_LABELS = [
     "person",
@@ -209,19 +213,95 @@ def get_source_text(text: str, start: int, end: int):
 
     return text[sentence_start:sentence_end].strip()
 
+def chunk_text(text: str):
+    """
+    Split text into overlapping word-based chunks.
+
+    Each chunk contains up to CHUNK_SIZE words.
+    Consecutive chunks overlap by CHUNK_OVERLAP words.
+
+    The character position of each chunk in the
+    original document is also stored.
+    """
+
+    words = list(
+        re.finditer(r"\S+", text)
+    )
+
+    if not words:
+        return []
+
+    chunks = []
+
+    start_word = 0
+
+    step = CHUNK_SIZE - CHUNK_OVERLAP
+
+    while start_word < len(words):
+
+        end_word = min(
+            start_word + CHUNK_SIZE,
+            len(words)
+        )
+
+        chunk_start = words[start_word].start()
+        chunk_end = words[end_word - 1].end()
+
+        chunk = text[chunk_start:chunk_end]
+
+        chunks.append({
+            "text": chunk,
+            "start_char": chunk_start,
+            "end_char": chunk_end
+        })
+
+        start_word += step
+
+# --- Outdent these lines outside the while loop ---
+    print(f"\n--- GLiNER Chunking Debug ---")
+    print(f"Total words: {len(words)}")
+    print(f"Total chunks created: {len(chunks)}")
+
+    for index, chunk_info in enumerate(chunks, start=1):
+        print(
+            f"Chunk {index}: "
+            f"chars {chunk_info['start_char']} → {chunk_info['end_char']} "
+            f"({len(chunk_info['text'].split())} words)"
+        )
+    print(f"------------------------------\n")
+
+    return chunks
 
 def extract_entities(text):
 
-    results = model.predict_entities(
-        text,
-        ENTITY_LABELS,
-        threshold=0.5
-    )
+    chunks = chunk_text(text)
+
+    results = []
+
+    for chunk in chunks:
+
+        chunk_results = model.predict_entities(
+            chunk["text"],
+            ENTITY_LABELS,
+            threshold=0.5,
+            max_len = 512
+        )
+
+        for entity in chunk_results:
+
+            entity["start"] = (
+                entity["start"]
+                + chunk["start_char"]
+            )
+
+            entity["end"] = (
+                entity["end"]
+                + chunk["start_char"]
+            )
+
+            results.append(entity)
 
     entities = []
-
-    # Keeps track of entities already seen
-    seen_entities = set()
 
     for entity in results:
 
@@ -282,7 +362,8 @@ def extract_entities(text):
 
 
         # ---------------------------------
-        # 5. Remove duplicates
+        # 5. Merge duplicate entities
+        # Keep the highest-confidence result
         # ---------------------------------
 
         entity_key = (
@@ -290,10 +371,35 @@ def extract_entities(text):
             entity_type
         )
 
-        if entity_key in seen_entities:
-            continue
+        existing_entity = next(
+            (
+                existing
+                for existing in entities
+                if (
+                    existing["normalized_name"],
+                    existing["entity_type"]
+                ) == entity_key
+            ),
+            None
+        )
 
-        seen_entities.add(entity_key)
+        if existing_entity:
+
+            if confidence_score > existing_entity["confidence_score"]:
+                existing_entity.update({
+                    "entity_name": cleaned_entity_name,
+                    "raw_entity_type": raw_entity_type,
+                    "confidence_score": confidence_score,
+                    "source_text": get_source_text(
+                        text,
+                        start,
+                        end
+                    ),
+                    "start": start,
+                    "end": end
+                })
+
+            continue
 
 
         # ---------------------------------
