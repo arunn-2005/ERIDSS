@@ -1,110 +1,78 @@
 import axios from "axios";
-import api from "./api";
 
 const API = "http://127.0.0.1:8000/documents";
 
-const getToken = () => localStorage.getItem("access_token");
+const getToken = () => localStorage.getItem("access_token") || localStorage.getItem("token");
+
+const getAuthHeaders = (isMultipart = false) => {
+  const token = getToken();
+  return {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(isMultipart ? { "Content-Type": "multipart/form-data" } : {}),
+    },
+  };
+};
 
 // -----------------------------
 // Upload Document
 // -----------------------------
 export const uploadDocument = async (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
+  const formData = new FormData();
+  formData.append("file", file);
 
-    const response = await axios.post(
-        `${API}/upload`,
-        formData,
-        {
-            headers: {
-                Authorization: `Bearer ${getToken()}`,
-                "Content-Type": "multipart/form-data",
-            },
-        }
-    );
-
-    return response.data;
+  const response = await axios.post(`${API}/upload`, formData, getAuthHeaders(true));
+  return response.data;
 };
 
 // -----------------------------
 // Get My Documents
 // -----------------------------
 export const getMyDocuments = async (
-    page = 1,
-    limit = 10,
-    search = "",
-    status = "",
-    file_type = "",
-    sort = "file_size",
-    order = "desc"
+  page = 1,
+  limit = 10,
+  search = "",
+  status = "",
+  file_type = "",
+  sort = "file_size",
+  order = "desc"
 ) => {
-    const response = await axios.get(
-        `${API}/my-documents`,
-        {
-            headers: {
-                Authorization: `Bearer ${getToken()}`
-            },
-
-            params: {
-                page,
-                limit,
-                search,
-                status,
-                file_type,
-                sort,
-                order
-            }
-        }
-    );
-
-    return response.data;
+  const response = await axios.get(`${API}/my-documents`, {
+    ...getAuthHeaders(),
+    params: { page, limit, search, status, file_type, sort, order },
+  });
+  return response.data;
 };
 
 // -----------------------------
 // Download Document
 // -----------------------------
 export const downloadDocument = async (documentId, filename) => {
-    const response = await axios.get(
-        `${API}/${documentId}/download`,
-        {
-            headers: {
-                Authorization: `Bearer ${getToken()}`
-            },
-            responseType: "blob"
-        }
-    );
+  const response = await axios.get(`${API}/${documentId}/download`, {
+    ...getAuthHeaders(),
+    responseType: "blob",
+  });
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", filename);
-
-    document.body.appendChild(link);
-    link.click();
-
-    link.remove();
-
-    window.URL.revokeObjectURL(url);
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 };
 
 // -----------------------------
 // View Document
 // -----------------------------
 export const viewDocument = async (documentId) => {
-  const token = getToken();
-
-  const url = `${API}/${documentId}/view`;
-
-  const response = await axios.get(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+  const response = await axios.get(`${API}/${documentId}/view`, {
+    ...getAuthHeaders(),
     responseType: "blob",
   });
 
   const blobUrl = window.URL.createObjectURL(response.data);
-
   window.open(blobUrl, "_blank");
 };
 
@@ -112,15 +80,7 @@ export const viewDocument = async (documentId) => {
 // Delete Document
 // -----------------------------
 export const deleteDocument = async (documentId) => {
-  const response = await axios.delete(
-    `${API}/${documentId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${getToken()}`
-      }
-    }
-  );
-
+  const response = await axios.delete(`${API}/${documentId}`, getAuthHeaders());
   return response.data;
 };
 
@@ -128,10 +88,7 @@ export const deleteDocument = async (documentId) => {
 // 1. Text Extraction
 // -----------------------------
 export const processDocument = async (documentId) => {
-  const response = await api.post(
-    `/documents/${documentId}/process`
-  );
-
+  const response = await axios.post(`${API}/${documentId}/process`, {}, getAuthHeaders());
   return response.data;
 };
 
@@ -139,22 +96,41 @@ export const processDocument = async (documentId) => {
 // 2. Entity Extraction
 // -----------------------------
 export const extractEntities = async (documentId) => {
-  const response = await api.post(
-    `/documents/${documentId}/extract-entities`
-  );
-
+  const response = await axios.post(`${API}/${documentId}/extract-entities`, {}, getAuthHeaders());
   return response.data;
 };
 
 // -----------------------------
-// Full Processing Pipeline (Text + Entities)
+// 3. Relation Extraction
+// -----------------------------
+export const extractRelations = async (documentId) => {
+  const response = await axios.post(`${API}/${documentId}/extract-relations`, {}, getAuthHeaders());
+  return response.data;
+};
+
+// -----------------------------
+// 4. Document Graph
+// -----------------------------
+export const getDocumentGraph = async (documentId) => {
+  const token = getToken();
+  if (!token) {
+    throw new Error("No authentication token found. Please log in again.");
+  }
+
+  const response = await axios.get(`${API}/${documentId}/graph`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+};
+
+// -----------------------------
+// Full Processing Pipeline
 // -----------------------------
 export const runFullDocumentPipeline = async (documentId) => {
-  // Step 1: Text extraction (saves to DB)
   await processDocument(documentId);
-  
-  // Step 2: Entity extraction (saves to DB)
   await extractEntities(documentId);
-
-  return { message: "Document processed successfully." };
+  await extractRelations(documentId);
+  return { message: "Document, entities, and relationships processed successfully." };
 };

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   getMyDocuments,
   downloadDocument,
@@ -6,9 +7,13 @@ import {
   deleteDocument,
   processDocument,
   extractEntities,
+  extractRelations,
+  getDocumentGraph
 } from "../../services/documentService";
 
 function DocumentTable({ refresh }) {
+  const navigate = useNavigate();
+
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
@@ -99,9 +104,12 @@ function DocumentTable({ refresh }) {
       // Step 2: Entity extraction (stores entities in DB)
       await extractEntities(documentId);
 
-      alert("Document processed successfully.");
+      // Step 3: Relation extraction (builds and saves knowledge graph payload)
+      await extractRelations(documentId);
 
-      loadDocuments(); // Refresh the table
+      alert("Document, entities, and relations processed successfully.");
+
+      loadDocuments();
     } catch (error) {
       console.error("Processing error:", error);
 
@@ -266,19 +274,28 @@ function DocumentTable({ refresh }) {
                       </button>
 
                       <button
-                        title="Process"
+                        title="View Knowledge Graph"
+                        onClick={() => navigate(`/knowledge-graph/${doc.id}`)}
+                        style={{
+                          marginRight: "8px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        🌐
+                      </button>
+
+                      <button
+                        title="Process Pipeline (Text -> Entities -> Relations)"
                         onClick={() => handleProcess(doc.id)}
                         disabled={
                           processingId === doc.id ||
-                          doc.status === "Processing" ||
-                          doc.status === "Processed"
+                          doc.status === "Processing"
                         }
                         style={{
                           marginRight: "8px",
                           cursor:
                             processingId === doc.id ||
-                            doc.status === "Processing" ||
-                            doc.status === "Processed"
+                            doc.status === "Processing"
                               ? "not-allowed"
                               : "pointer",
                         }}

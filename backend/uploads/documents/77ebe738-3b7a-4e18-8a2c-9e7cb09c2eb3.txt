@@ -1,0 +1,13 @@
+ENTERPRISE CLOUD PROCUREMENT AND SERVICE LEVEL AGREEMENT
+
+1. Parties and Locations
+This Enterprise Agreement is made between Kvantum Technologies SE, an enterprise software vendor headquartered in Munich, Germany, and Nordic Maritime Group, a logistics operator based in Oslo, Norway. Kvantum Technologies SE provides specialized infrastructure services to Nordic Maritime Group across its European facilities.
+
+2. Infrastructure Deployment and Architecture
+Kvantum Technologies SE agrees to deploy DataMesh Pro on Microsoft Azure infrastructure for Nordic Maritime Group. The deployment engineering is directed by Henrik Lindqvist, who acts as Lead Solutions Architect for Kvantum Technologies SE. Henrik Lindqvist configures Apache Cassandra clusters to ingest telematics data from cargo vessels. Furthermore, Nordic Maritime Group connects its existing Snowflake warehouse to DataMesh Pro to centralize fleet analytics.
+
+3. Monitoring and Security Governance
+Nordic Maritime Group utilizes Grafana to monitor containerized workloads on Microsoft Azure. In case of unexpected downtime, DataMesh Pro sends alerts directly to Henrik Lindqvist. Kvantum Technologies SE contracts Securitas CyberLab, an external audit firm based in Stockholm, to conduct quarterly penetration tests against the Apache Cassandra nodes. 
+
+4. Financial Terms and Compliance
+Nordic Maritime Group will pay $350,000 to Kvantum Technologies SE following milestone verification. Both parties agree that Kvantum Technologies SE will process maritime data in strict accordance with the NIS2 Directive. Any contractual disputes will be submitted to the Arbitration Institute of the Stockholm Chamber of Commerce.

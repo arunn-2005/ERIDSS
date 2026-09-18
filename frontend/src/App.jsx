@@ -36,7 +36,8 @@ function App() {
       <Route element={<MainLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/documents" element={<Documents />} />
-        <Route path="/knowledge-graph" element={<KnowledgeGraph />} />
+        {/* Supports /knowledge-graph and /knowledge-graph/:documentId */}
+        <Route path="/knowledge-graph/:documentId?" element={<KnowledgeGraph />} />
         <Route path="/risk-analysis" element={<RiskAnalysis />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
@@ -47,10 +48,7 @@ function App() {
         <Route path="/admin/users" element={<UserManagement />} />
         <Route path="/admin/documents" element={<AdminDocuments />} />
         <Route path="/admin/system-logs" element={<SystemLogs />} />
-        <Route
-    path="/admin/documents/dashboard"
-    element={<AdminDocumentDashboard />}
-/>
+        <Route path="/admin/documents/dashboard" element={<AdminDocumentDashboard />} />
         <Route path="/admin/settings" element={<AdminSettings />} />
       </Route>
 

@@ -260,14 +260,23 @@ def extract_document_relations(
 
 @router.get("/{document_id}/graph")
 def get_document_knowledge_graph(
-    document_id: uuid.UUID,
+    document_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    try:
+        doc_uuid = uuid.UUID(str(document_id))
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid UUID format."
+        )
+
+    # Ensure document exists and belongs to the authenticated user
     document = (
         db.query(Document)
         .filter(
-            Document.id == document_id,
+            Document.id == doc_uuid,
             Document.user_id == current_user.id
         )
         .first()
@@ -279,13 +288,17 @@ def get_document_knowledge_graph(
             detail="Document not found."
         )
 
+    # Query using string and UUID compatibility
     kg = (
         db.query(KnowledgeGraph)
-        .filter(KnowledgeGraph.document_id == document_id)
+        .filter(
+            (KnowledgeGraph.document_id == doc_uuid) | 
+            (KnowledgeGraph.document_id == str(doc_uuid))
+        )
         .first()
     )
 
-    if not kg:
+    if not kg or not kg.graph_data:
         return {"nodes": [], "edges": []}
 
     return kg.graph_data
