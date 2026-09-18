@@ -27,7 +27,8 @@ from app.models import (
     EntityEvidence,
     CanonicalEntity,
 )
-
+# Newly added models for relation extraction and graph storage
+from app.models.relationship import Relationship, RelationshipEvidence, KnowledgeGraph
 # Alembic Config object
 config = context.config
 
