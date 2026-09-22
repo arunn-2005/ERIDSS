@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import CytoscapeComponent from "react-cytoscapejs";
 import { getDocumentGraph } from "../services/documentService";
+import GraphSyncButton from "../components/GraphSyncButton"; // <-- 1. Import Component
 
 const TYPE_COLORS = {
   vendor: "#3b82f6",
@@ -238,20 +239,10 @@ export default function KnowledgeGraph() {
             )}
           </div>
 
-          <button
-            style={{
-              width: "100%",
-              padding: "10px",
-              backgroundColor: "#0f172a",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: "13px"
-            }}
-          >
-            Approve for Neo4j Sync
-          </button>
+          {/* 2. Render GraphSyncButton with the current documentId */}
+          <div>
+            <GraphSyncButton documentId={documentId} />
+          </div>
         </div>
       </div>
     </div>
