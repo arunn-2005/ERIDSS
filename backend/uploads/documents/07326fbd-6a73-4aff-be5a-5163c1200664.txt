@@ -1,0 +1,18 @@
+Global Supply Chain and Infrastructure Incident Report
+Incident Overview and Corporate Jurisdiction
+Helios Semiconductor SE, headquartered in Munich, operates primary fabrication facilities across Dresden and Austin. Helios maintains critical Tier-1 technology partnerships with ASML, TSMC, and Nvidia to sustain high-throughput EUV lithography production. Under Master Service Agreement MSA-8841, Helios procures advanced edge telemetry infrastructure and firmware maintenance from OctaCore Networks, an enterprise telecommunications provider registered in Amsterdam.
+
+Technical Architecture and Deployment
+OctaCore Networks provisions, configures, and manages low-latency transmission switches deployed directly within Helios wafer manufacturing facilities in Dresden. OctaCore hosts its central orchestration platform on Google Cloud Platform across the Frankfurt region, utilizing Elasticsearch clusters for ingest telemetry, PostgreSQL instances for tenant metadata, and RabbitMQ message brokers to dispatch operational alerts. OctaCore subcontracts remote incident response and site reliability engineering to Nexus Global IT, an offshore managed services firm based in Bangalore. Lead security architect Marcus Vance oversees security operations for Nexus Global IT from Dublin.
+
+Breach Identification and Threat Vector
+On August 14, 2026, internal automated monitoring alerted security personnel to anomalous outbound encrypted network traffic originating from internal production VLANs at the Dresden facility. An unknown advanced persistent threat actor, tracked as Phobos Team, gained initial unauthorized access by compromising an unpatched zero-day vulnerability in Fortinet VPN appliances deployed at the perimeter. Phobos Team systematically deployed GhostLocker Ransomware across internal control systems, targeting Active Directory servers, VMware ESXi hypervisors, and industrial network attached storage devices hosted by NetApp.
+
+Cross-Vendor Compromise and Data Exfiltration
+Phobos Team leveraged the privileged access credentials of Marcus Vance to traverse through Nexus Global IT jump-hosts into the internal production systems of Helios Semiconductor. The attackers subsequently exfiltrated 450 gigabytes of proprietary EUV circuit design documents, intellectual property files, and confidential employee records. The exfiltrated data was routed through reverse proxy relays established in Reykjavik and Singapore before terminating at command-and-control servers hosted by OVHcloud in Roubaix.
+
+Regulatory Notifications and Enforcement Actions
+Helios Semiconductor notified the Federal Office for Information Security, Germany's federal cybersecurity agency based in Bonn, in compliance with statutory deadlines. Due to the unlawful processing and exposure of confidential personnel data across European manufacturing plants, the Federal Commissioner for Data Protection and Freedom of Information initiated formal investigative proceedings under GDPR enforcement guidelines. Simultaneously, the United States Securities and Exchange Commission issued an investigative subpoena regarding disclosure timelines for material operational risks.
+
+Remediation, Legal Retention, and Containment
+Helios retained legal counsel from Hengeler Mueller in Frankfurt to coordinate international regulatory disclosures. Helios retained incident containment and digital forensics teams from CrowdStrike to isolate compromised hypervisors, rotate enterprise root certificates, and rebuild firmware baselines across all OctaCore Networks hardware appliances. CrowdStrike deployed Falcon sensors across 4,200 endpoints, terminated all unauthorized active sessions, and restored core production clusters from immutable air-gapped backups.
