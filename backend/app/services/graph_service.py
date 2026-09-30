@@ -138,3 +138,99 @@ def sync_entities_to_neo4j(session: Session, document_id: str, nodes: list, edge
         "nodes_synced": len(prepared_nodes),
         "edges_synced": sum(len(batch) for batch in edges_grouped.values())
     }
+
+    # =====================================================================
+# ADDITIONS FOR RISK ANALYSIS & IMPACT ANALYSIS
+# =====================================================================
+
+def get_critical_risk_nodes(session: Session, limit: int = 10) -> list:
+    """
+    Queries Neo4j for top critical bottleneck entities ordered by 
+    betweenness centrality descending.
+    """
+    cypher = """
+    MATCH (e:Entity)
+    RETURN e.id AS id, 
+           e.name AS name, 
+           e.type AS type, 
+           COALESCE(e.betweenness_centrality, 0.0) AS betweenness_centrality, 
+           COALESCE(e.degree_centrality, 0.0) AS degree_centrality,
+           COALESCE(e.in_degree, 0) AS in_degree,
+           COALESCE(e.out_degree, 0) AS out_degree
+    ORDER BY betweenness_centrality DESC, degree_centrality DESC
+    LIMIT $limit
+    """
+    result = session.run(cypher, limit=limit)
+    critical_nodes = []
+    for record in result:
+        critical_nodes.append({
+            "id": record["id"],
+            "name": record["name"] or record["id"],
+            "type": record["type"] or "Entity",
+            "betweenness_centrality": record["betweenness_centrality"],
+            "degree_centrality": record["degree_centrality"],
+            "in_degree": record["in_degree"],
+            "out_degree": record["out_degree"]
+        })
+    return critical_nodes
+
+
+def recalculate_graph_centrality(session: Session) -> dict:
+    # 1. Fetch all nodes from Neo4j
+    nodes_result = session.run("MATCH (e:Entity) RETURN e.id AS id, e.name AS name, e.type AS type")
+    nodes = [{"id": r["id"], "name": r["name"], "type": r["type"]} for r in nodes_result]
+
+    # Handle empty database gracefully
+    if not nodes:
+        return {
+            "status": "success",
+            "message": "No nodes found in Neo4j to compute centrality.",
+            "nodes_updated": 0
+        }
+
+    # 2. Fetch all edges from Neo4j
+    edges_result = session.run("""
+        MATCH (s:Entity)-[r]->(t:Entity)
+        RETURN s.id AS source_id, t.id AS target_id, type(r) AS relation_type
+    """)
+    edges = [
+        {
+            "source_id": r["source_id"], 
+            "target_id": r["target_id"], 
+            "relation_type": r["relation_type"]
+        } 
+        for r in edges_result
+    ]
+
+    # 3. Calculate metrics using NetworkX
+    metrics = calculate_topological_metrics(nodes, edges)
+
+    # 4. Prepare batch updates
+    prepared_updates = []
+    for node in nodes:
+        node_id = str(node["id"])
+        node_metrics = metrics.get(node_id, {})
+        prepared_updates.append({
+            "id": node_id,
+            "degree_centrality": node_metrics.get("degree_centrality", 0.0),
+            "betweenness_centrality": node_metrics.get("betweenness_centrality", 0.0),
+            "in_degree": node_metrics.get("in_degree", 0),
+            "out_degree": node_metrics.get("out_degree", 0)
+        })
+
+    # 5. Execute Cypher batch update
+    update_cypher = """
+    UNWIND $updates AS row
+    MATCH (e:Entity {id: row.id})
+    SET e.degree_centrality = row.degree_centrality,
+        e.betweenness_centrality = row.betweenness_centrality,
+        e.in_degree = row.in_degree,
+        e.out_degree = row.out_degree,
+        e.updated_at = timestamp()
+    """
+    session.run(update_cypher, updates=prepared_updates)
+
+    return {
+        "status": "success",
+        "nodes_updated": len(prepared_updates)
+    }
