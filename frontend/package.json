@@ -15,7 +15,9 @@
     "react": "^19.2.7",
     "react-cytoscapejs": "^2.0.0",
     "react-dom": "^19.2.7",
-    "react-router-dom": "^7.18.0"
+    "react-router-dom": "^7.18.0",
+    "vis-data": "^8.0.5",
+    "vis-network": "^10.1.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
