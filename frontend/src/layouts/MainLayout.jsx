@@ -1,12 +1,12 @@
 import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import "../styles/ERIDSSTheme.css";
 
 function MainLayout() {
   return (
-    <div style={{ display: "flex" }}>
+    <div className="eridss-app-layout">
       <Sidebar />
-
-      <div style={{ flex: 1, padding: "20px" }}>
+      <div className="eridss-main-content fade-in">
         <Outlet />
       </div>
     </div>

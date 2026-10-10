@@ -1,0 +1,51 @@
+.documents-container {
+    color: #f8fafc;
+    animation: fade .5s ease;
+}
+
+.documents-header {
+    margin-bottom: 30px;
+}
+
+.documents-header h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #ffffff;
+}
+
+.documents-header p {
+    color: #94a3b8;
+    max-width: 650px;
+    line-height: 1.6;
+}
+
+.documents-panel {
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 25px;
+}
+
+.status-box {
+    background: #0f172a;
+    color: #93c5fd;
+    border-left: 4px solid #2563eb;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    font-size: 14px;
+    border: 1px solid #1e293b;
+}
+
+@keyframes fade {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

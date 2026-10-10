@@ -7,9 +7,9 @@ import {
   deleteDocument,
   processDocument,
   extractEntities,
-  extractRelations,
-  getDocumentGraph
+  extractRelations
 } from "../../services/documentService";
+import "../../styles/ERIDSSTheme.css";
 
 function DocumentTable({ refresh }) {
   const navigate = useNavigate();
@@ -98,13 +98,8 @@ function DocumentTable({ refresh }) {
     try {
       setProcessingId(documentId);
 
-      // Step 1: Text extraction (stores text in DB)
       await processDocument(documentId);
-
-      // Step 2: Entity extraction (stores entities in DB)
       await extractEntities(documentId);
-
-      // Step 3: Relation extraction (builds and saves knowledge graph payload)
       await extractRelations(documentId);
 
       alert("Document, entities, and relations processed successfully.");
@@ -146,33 +141,35 @@ function DocumentTable({ refresh }) {
   };
 
   return (
-    <div style={{ marginTop: "30px" }}>
-      <h2>Uploaded Documents</h2>
+    <div>
+      <h2 style={{ fontSize: "1.4rem", marginBottom: "20px", color: "white" }}>
+        Uploaded Documents
+      </h2>
 
       {/* Search & Filters */}
       <div
         style={{
           display: "flex",
-          gap: "15px",
-          marginBottom: "20px",
+          gap: "12px",
+          marginBottom: "22px",
           flexWrap: "wrap",
           alignItems: "center",
         }}
       >
         <input
           type="text"
+          className="eridss-input"
           placeholder="Search by filename..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{
-            padding: "8px",
-            width: "250px",
-          }}
+          style={{ width: "240px", padding: "10px 14px" }}
         />
 
         <select
+          className="eridss-select"
           value={fileTypeFilter}
           onChange={(e) => setFileTypeFilter(e.target.value)}
+          style={{ width: "150px", padding: "10px 14px" }}
         >
           <option value="">All File Types</option>
           <option value=".pdf">PDF</option>
@@ -181,8 +178,10 @@ function DocumentTable({ refresh }) {
         </select>
 
         <select
+          className="eridss-select"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
+          style={{ width: "150px", padding: "10px 14px" }}
         >
           <option value="">All Status</option>
           <option value="Uploaded">Uploaded</option>
@@ -191,8 +190,10 @@ function DocumentTable({ refresh }) {
         </select>
 
         <select
+          className="eridss-select"
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
+          style={{ width: "150px", padding: "10px 14px" }}
         >
           <option value="file_size">File Size</option>
           <option value="filename">Filename</option>
@@ -200,130 +201,139 @@ function DocumentTable({ refresh }) {
         </select>
 
         <select
+          className="eridss-select"
           value={sortOrder}
           onChange={(e) => setSortOrder(e.target.value)}
+          style={{ width: "150px", padding: "10px 14px" }}
         >
           <option value="desc">Descending</option>
           <option value="asc">Ascending</option>
         </select>
 
-        <button onClick={applyFilters}>Search</button>
+        <button className="eridss-btn-primary" onClick={applyFilters} style={{ padding: "10px 18px" }}>
+          Search
+        </button>
 
-        <button onClick={resetFilters}>Reset</button>
+        <button className="eridss-btn-secondary" onClick={resetFilters} style={{ padding: "10px 18px" }}>
+          Reset
+        </button>
       </div>
 
       {loading ? (
-        <p>Loading documents...</p>
+        <p style={{ color: "#94a3b8", padding: "20px 0" }}>Loading documents...</p>
       ) : (
         <>
-          <table
-            border="1"
-            cellPadding="10"
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-            }}
-          >
-            <thead>
-              <tr>
-                <th>Filename</th>
-                <th>File Type</th>
-                <th>File Size</th>
-                <th>Status</th>
-                <th>Uploaded At</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {documents.length === 0 ? (
+          <div style={{ overflowX: "auto" }}>
+            <table className="eridss-table">
+              <thead>
                 <tr>
-                  <td colSpan="6" style={{ textAlign: "center" }}>
-                    No documents found.
-                  </td>
+                  <th>Filename</th>
+                  <th>File Type</th>
+                  <th>File Size</th>
+                  <th>Status</th>
+                  <th>Uploaded At</th>
+                  <th>Actions</th>
                 </tr>
-              ) : (
-                documents.map((doc) => (
-                  <tr key={doc.id}>
-                    <td>{doc.filename}</td>
-                    <td>{doc.file_type.toUpperCase()}</td>
-                    <td>{(doc.file_size / 1024).toFixed(2)} KB</td>
-                    <td>{doc.status}</td>
-                    <td>{new Date(doc.uploaded_at).toLocaleString()}</td>
-                    <td>
-                      <button
-                        title="View"
-                        onClick={() => viewDocument(doc.id)}
-                        style={{
-                          marginRight: "8px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        👁️
-                      </button>
+              </thead>
 
-                      <button
-                        title="Download"
-                        onClick={() => downloadDocument(doc.id, doc.filename)}
-                        style={{
-                          marginRight: "8px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        ⬇️
-                      </button>
-
-                      <button
-                        title="View Knowledge Graph"
-                        onClick={() => navigate(`/knowledge-graph/${doc.id}`)}
-                        style={{
-                          marginRight: "8px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        🌐
-                      </button>
-
-                      <button
-                        title="Process Pipeline (Text -> Entities -> Relations)"
-                        onClick={() => handleProcess(doc.id)}
-                        disabled={
-                          processingId === doc.id ||
-                          doc.status === "Processing"
-                        }
-                        style={{
-                          marginRight: "8px",
-                          cursor:
-                            processingId === doc.id ||
-                            doc.status === "Processing"
-                              ? "not-allowed"
-                              : "pointer",
-                        }}
-                      >
-                        {processingId === doc.id ? "⏳" : "⚙️"}
-                      </button>
-
-                      <button
-                        title="Delete"
-                        onClick={() => handleDelete(doc.id)}
-                        style={{
-                          cursor: "pointer",
-                          color: "red",
-                        }}
-                      >
-                        🗑️
-                      </button>
+              <tbody>
+                {documents.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>
+                      No documents found.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  documents.map((doc) => (
+                    <tr key={doc.id}>
+                      <td style={{ fontWeight: "500", color: "white" }}>{doc.filename}</td>
+                      <td>{doc.file_type.toUpperCase()}</td>
+                      <td>{(doc.file_size / 1024).toFixed(2)} KB</td>
+                      <td>
+                        <span style={{
+                          padding: "4px 10px",
+                          borderRadius: "6px",
+                          fontSize: "12px",
+                          background: doc.status === "Processed" ? "rgba(16, 185, 129, 0.15)" : "rgba(37, 99, 235, 0.15)",
+                          color: doc.status === "Processed" ? "#34d399" : "#60a5fa"
+                        }}>
+                          {doc.status}
+                        </span>
+                      </td>
+                      <td>{new Date(doc.uploaded_at).toLocaleString()}</td>
+                      <td>
+                        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                          <button
+                            title="View"
+                            onClick={() => viewDocument(doc.id)}
+                            style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}
+                          >
+                            👁️
+                          </button>
+
+                          <button
+                            title="Download"
+                            onClick={() => downloadDocument(doc.id, doc.filename)}
+                            style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}
+                          >
+                            ⬇️
+                          </button>
+
+                          <button
+                            title="View Knowledge Graph"
+                            onClick={() => navigate(`/knowledge-graph/${doc.id}`)}
+                            style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}
+                          >
+                            🌐
+                          </button>
+
+                          <button
+                            title="Process Pipeline (Text -> Entities -> Relations)"
+                            onClick={() => handleProcess(doc.id)}
+                            disabled={
+                              processingId === doc.id ||
+                              doc.status === "Processing"
+                            }
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              cursor:
+                                processingId === doc.id ||
+                                doc.status === "Processing"
+                                  ? "not-allowed"
+                                  : "pointer",
+                              fontSize: "16px",
+                              opacity: processingId === doc.id ? 0.5 : 1
+                            }}
+                          >
+                            {processingId === doc.id ? "⏳" : "⚙️"}
+                          </button>
+
+                          <button
+                            title="Delete"
+                            onClick={() => handleDelete(doc.id)}
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              cursor: "pointer",
+                              fontSize: "16px",
+                            }}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
           {/* Pagination */}
           <div
             style={{
-              marginTop: "20px",
+              marginTop: "25px",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
@@ -331,17 +341,21 @@ function DocumentTable({ refresh }) {
             }}
           >
             <button
+              className="eridss-btn-secondary"
               disabled={page === 1}
               onClick={() => setPage(page - 1)}
+              style={{ padding: "8px 16px", opacity: page === 1 ? 0.5 : 1 }}
             >
               Previous
             </button>
 
-            <strong>Page {page}</strong>
+            <strong style={{ color: "#cbd5e1" }}>Page {page}</strong>
 
             <button
+              className="eridss-btn-secondary"
               disabled={documents.length < limit}
               onClick={() => setPage(page + 1)}
+              style={{ padding: "8px 16px", opacity: documents.length < limit ? 0.5 : 1 }}
             >
               Next
             </button>

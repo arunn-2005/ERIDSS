@@ -1,20 +1,19 @@
 .dashboard{
     color:#f8fafc;
-    animation:fade .5s ease;
 }
 
 .dashboard-header{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    margin-bottom:40px;
+    margin-bottom:35px;
 }
 
 .dashboard-header h1{
     font-size:2.2rem;
     font-weight:700;
     margin-bottom:8px;
-    color:#ffffff;
+    color:#ffffff !important;
 }
 
 .dashboard-header p{
@@ -23,30 +22,10 @@
     line-height:1.6;
 }
 
-
-
 .header-actions{
     display:flex;
     gap:12px;
     align-items:center;
-}
-
-.logout-btn{
-    background:#dc2626;
-    color:#fff;
-    border:none;
-    padding:12px 22px;
-    border-radius:10px;
-    font-size:15px;
-    font-weight:500;
-    cursor:pointer;
-    transition:all .3s ease;
-}
-
-.logout-btn:hover{
-    background:#b91c1c;
-    transform:translateY(-2px);
-    box-shadow:0 8px 18px rgba(220,38,38,.25);
 }
 
 .stats-grid{
@@ -64,6 +43,7 @@
     transition:.3s;
     position:relative;
     overflow:hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }
 
 .stat-card::before{
@@ -83,18 +63,20 @@
 
 .stat-title{
     color:#94a3b8;
-    font-size:14px;
+    font-size:13px;
     text-transform:uppercase;
     letter-spacing:1px;
 }
 
 .stat-card h2{
-    font-size:42px;
+    font-size:38px;
     margin:14px 0 6px;
+    color: white;
 }
 
 .stat-card p{
     color:#64748b;
+    font-size: 14px;
 }
 
 .dashboard-content{
@@ -108,6 +90,7 @@
     border:1px solid #1e293b;
     border-radius:14px;
     padding:24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }
 
 .large-panel{
@@ -117,6 +100,7 @@
 .panel h3{
     margin-bottom:20px;
     color:white;
+    font-size: 1.2rem;
 }
 
 .empty-state{
@@ -128,44 +112,15 @@
     border-radius:12px;
     color:#64748b;
     font-size:15px;
-}
-
-@keyframes fade{
-
-from{
-opacity:0;
-transform:translateY(20px);
-}
-
-to{
-opacity:1;
-transform:translateY(0);
-}
-
+    background: rgba(15, 23, 42, 0.4);
 }
 
 @media(max-width:1000px){
-
-.stats-grid{
-grid-template-columns:repeat(2,1fr);
-}
-
-.dashboard-content{
-grid-template-columns:1fr;
-}
-
+  .stats-grid{ grid-template-columns:repeat(2,1fr); }
+  .dashboard-content{ grid-template-columns:1fr; }
 }
 
 @media(max-width:650px){
-
-.stats-grid{
-grid-template-columns:1fr;
-}
-
-.dashboard-header{
-flex-direction:column;
-align-items:flex-start;
-gap:20px;
-}
-
+  .stats-grid{ grid-template-columns:1fr; }
+  .dashboard-header{ flex-direction:column; align-items:flex-start; gap:20px; }
 }

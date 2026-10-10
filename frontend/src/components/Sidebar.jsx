@@ -1,61 +1,56 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import "../styles/ERIDSSTheme.css";
 
 function Sidebar() {
+  const location = useLocation();
+
+  const isActive = (path) => location.pathname === path;
+
   return (
-    <div
-      style={{
-        width: "250px",
-        height: "100vh",
-        background: "#1f2937",
-        color: "white",
-        padding: "20px",
-      }}
-    >
-      <h2>ERIDSS</h2>
+    <div className="eridss-sidebar">
+      <div className="eridss-sidebar-brand">ERIDSS</div>
+      <p style={{ color: "#94a3b8", fontSize: "13px", marginBottom: "15px" }}>
+        Enterprise Risk Intelligence
+      </p>
 
       <hr />
 
-      <p>
-        <Link to="/dashboard" style={{ color: "white", textDecoration: "none" }}>
+      <div className="eridss-sidebar-links">
+        <Link
+          to="/dashboard"
+          className={`eridss-sidebar-link ${isActive("/dashboard") ? "active" : ""}`}
+        >
           📊 Dashboard
         </Link>
-      </p>
 
-      <p>
         <Link
           to="/documents"
-          style={{ color: "white", textDecoration: "none" }}
+          className={`eridss-sidebar-link ${isActive("/documents") ? "active" : ""}`}
         >
           📄 Documents
         </Link>
-      </p>
 
-      <p>
         <Link
           to="/knowledge-graph"
-          style={{ color: "white", textDecoration: "none" }}
+          className={`eridss-sidebar-link ${isActive("/knowledge-graph") ? "active" : ""}`}
         >
           🕸 Knowledge Graph
         </Link>
-      </p>
 
-      <p>
         <Link
           to="/risk-analysis"
-          style={{ color: "white", textDecoration: "none" }}
+          className={`eridss-sidebar-link ${isActive("/risk-analysis") ? "active" : ""}`}
         >
           ⚠ Risk Analysis
         </Link>
-      </p>
 
-      <p>
         <Link
           to="/settings"
-          style={{ color: "white", textDecoration: "none" }}
+          className={`eridss-sidebar-link ${isActive("/settings") ? "active" : ""}`}
         >
           ⚙ Settings
         </Link>
-      </p>
+      </div>
     </div>
   );
 }

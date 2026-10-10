@@ -49,55 +49,60 @@ function DocumentUpload({ onUploadSuccess }) {
   };
 
   return (
-    <div
-      style={{
-        border: "1px solid #d1d5db",
-        borderRadius: "10px",
-        padding: "25px",
-        marginBottom: "30px",
-        backgroundColor: "#ffffff",
-      }}
-    >
-      <h2>Upload Enterprise Document</h2>
+    <div>
+      <h2 style={{ fontSize: "1.4rem", marginBottom: "16px", color: "white" }}>
+        Upload Enterprise Document
+      </h2>
 
-      <input
-        id="documentInput"
-        type="file"
-        accept=".pdf,.docx,.txt"
-        onChange={handleFileChange}
-      />
-
-      <br />
-      <br />
-
-      {selectedFile && (
-        <p>
-          <strong>Selected File:</strong> {selectedFile.name}
-        </p>
-      )}
-
-      {message && (
-        <p
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <input
+          id="documentInput"
+          type="file"
+          accept=".pdf,.docx,.txt"
+          onChange={handleFileChange}
           style={{
-            color: isError ? "red" : "green",
-            fontWeight: "bold",
+            background: "#0f172a",
+            border: "1px dashed #334155",
+            padding: "20px",
+            borderRadius: "10px",
+            color: "#94a3b8",
+            cursor: "pointer",
+            outline: "none"
+          }}
+        />
+
+        {selectedFile && (
+          <p style={{ color: "#cbd5e1", fontSize: "14px" }}>
+            <strong style={{ color: "white" }}>Selected File:</strong> {selectedFile.name}
+          </p>
+        )}
+
+        {message && (
+          <div style={{
+            background: isError ? "#3f1111" : "#064e3b",
+            color: isError ? "#fecaca" : "#a7f3d0",
+            borderLeft: `4px solid ${isError ? "#ef4444" : "#10b981"}`,
+            padding: "12px",
+            borderRadius: "8px",
+            fontSize: "14px"
+          }}>
+            {message}
+          </div>
+        )}
+
+        <button
+          className="eridss-btn-primary"
+          onClick={handleUpload}
+          disabled={loading}
+          style={{
+            width: "fit-content",
+            cursor: loading ? "not-allowed" : "pointer",
+            opacity: loading ? 0.7 : 1
           }}
         >
-          {message}
-        </p>
-      )}
-
-      <button
-        onClick={handleUpload}
-        disabled={loading}
-        style={{
-          padding: "10px 20px",
-          cursor: loading ? "not-allowed" : "pointer",
-          opacity: loading ? 0.7 : 1,
-        }}
-      >
-        {loading ? "Uploading..." : "Upload Document"}
-      </button>
+          {loading ? "Uploading..." : "Upload Document"}
+        </button>
+      </div>
     </div>
   );
 }

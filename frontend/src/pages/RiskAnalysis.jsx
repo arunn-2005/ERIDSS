@@ -99,10 +99,10 @@ const RiskAnalysis = () => {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
         <div>
-          <h2 style={{ fontSize: "24px", fontWeight: "bold", color: "#1f2937", margin: 0 }}>
+          <h2 style={{ fontSize: "24px", fontWeight: "bold", color: "#ffffff !important", margin: 0 }}>
             Risk Intelligence & Decision Support
           </h2>
-          <p style={{ fontSize: "14px", color: "#4b5563", margin: "4px 0 0 0" }}>
+          <p style={{ fontSize: "14px", color: "#94a3b8", margin: "4px 0 0 0" }}>
             Identifies critical graph nodes, simulates cascade outages, and provides mitigation plans.
           </p>
         </div>

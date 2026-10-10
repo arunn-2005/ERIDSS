@@ -2,6 +2,7 @@ import { useState } from "react";
 import DocumentUpload from "../components/Documents/DocumentUpload";
 import DocumentTable from "../components/Documents/DocumentTable";
 import { runFullDocumentPipeline } from "../services/documentService";
+import "../styles/ERIDSSTheme.css";
 
 function Documents() {
   const [refresh, setRefresh] = useState(false);
@@ -34,17 +35,41 @@ function Documents() {
 
   return (
     <div>
-      <h1>Documents</h1>
+      <div style={{ marginBottom: "30px" }}>
+        <h1 style={{ fontSize: "2.2rem", fontWeight: "700", marginBottom: "8px", color: "#ffffff" }}>
+          Documents
+        </h1>
+        <p style={{ color: "#94a3b8", maxWidth: "650px", lineHeight: "1.6" }}>
+          Manage and process technical enterprise documentation securely.
+        </p>
+      </div>
 
-      <DocumentUpload onUploadSuccess={handleUploadSuccess} />
+      <div className="eridss-card">
+        <DocumentUpload onUploadSuccess={handleUploadSuccess} />
+      </div>
 
-      {statusMessage && <p className="status-message">{statusMessage}</p>}
+      {statusMessage && (
+        <div style={{
+          background: "#0f172a",
+          color: "#93c5fd",
+          borderLeft: "4px solid #2563eb",
+          padding: "14px 18px",
+          borderRadius: "10px",
+          marginBottom: "25px",
+          fontSize: "14px",
+          border: "1px solid #1e293b"
+        }}>
+          {statusMessage}
+        </div>
+      )}
 
-      <DocumentTable 
-        refresh={refresh} 
-        onProcess={handleProcess}
-        processingId={processingId}
-      />
+      <div className="eridss-card">
+        <DocumentTable 
+          refresh={refresh} 
+          onProcess={handleProcess}
+          processingId={processingId}
+        />
+      </div>
     </div>
   );
 }
