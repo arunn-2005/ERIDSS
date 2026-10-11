@@ -263,7 +263,7 @@ function DocumentTable({ refresh }) {
                       <td>{new Date(doc.uploaded_at).toLocaleString()}</td>
                       <td>
                         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                          <button
+                          {/* <button
                             title="View"
                             onClick={() => viewDocument(doc.id)}
                             style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}
@@ -277,7 +277,7 @@ function DocumentTable({ refresh }) {
                             style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}
                           >
                             ⬇️
-                          </button>
+                          </button> */}
 
                           <button
                             title="View Knowledge Graph"
@@ -309,7 +309,7 @@ function DocumentTable({ refresh }) {
                             {processingId === doc.id ? "⏳" : "⚙️"}
                           </button>
 
-                          <button
+                          {/* <button
                             title="Delete"
                             onClick={() => handleDelete(doc.id)}
                             style={{
@@ -320,7 +320,7 @@ function DocumentTable({ refresh }) {
                             }}
                           >
                             🗑️
-                          </button>
+                          </button> */}
                         </div>
                       </td>
                     </tr>
