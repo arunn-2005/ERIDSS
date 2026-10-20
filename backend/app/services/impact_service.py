@@ -3,7 +3,7 @@ from neo4j import Session
 def simulate_entity_failure(session: Session, node_id: str, max_depth: int = 4) -> dict:
     """
     Simulates a failure of a specific entity node and calculates the downstream blast radius 
-    by traversing outgoing dependency relationships up to max_depth hops.
+    by traversing dependency relationships up to max_depth hops.
     """
     # 1. Check if target entity exists
     target_check = session.run(
@@ -23,18 +23,19 @@ def simulate_entity_failure(session: Session, node_id: str, max_depth: int = 4) 
         "type": target_check["type"] or "Entity"
     }
 
-    # 2. Traverse paths linked to the target node, excluding the target node itself
-    cypher_traversal = """
-    MATCH (failed:Entity {id: $node_id})
-    MATCH path = (affected:Entity)-[*1..4]->(failed)
+    # 2. Traverse paths linked to the target node
+    cypher_traversal = f"""
+    MATCH (failed:Entity {{id: $node_id}})
+    MATCH path = (affected:Entity)-[*1..{max_depth}]-(failed)
     WHERE affected.id <> $node_id
     WITH DISTINCT affected, min(length(path)) AS depth
     RETURN affected.id AS id, 
            affected.name AS name, 
            affected.type AS type, 
+           COALESCE(affected.composite_risk_score, 0.0) AS composite_risk_score,
            COALESCE(affected.betweenness_centrality, 0.0) AS betweenness_centrality,
            depth
-    ORDER BY depth ASC, betweenness_centrality DESC
+    ORDER BY depth ASC, composite_risk_score DESC
     """
 
     results = session.run(cypher_traversal, node_id=node_id)
@@ -48,6 +49,7 @@ def simulate_entity_failure(session: Session, node_id: str, max_depth: int = 4) 
             "id": record["id"],
             "name": record["name"] or record["id"],
             "type": node_type,
+            "composite_risk_score": record["composite_risk_score"],
             "betweenness_centrality": record["betweenness_centrality"],
             "depth": record["depth"]
         }
@@ -62,6 +64,7 @@ def simulate_entity_failure(session: Session, node_id: str, max_depth: int = 4) 
         "status": "success",
         "target_node": target_info,
         "blast_radius_count": len(affected_nodes),
+        "combined_blast_radius_count": len(affected_nodes),
         "affected_nodes": affected_nodes,
         "categorized_impact": categorized_impact
     }

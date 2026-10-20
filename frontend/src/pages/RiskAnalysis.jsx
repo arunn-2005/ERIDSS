@@ -6,6 +6,7 @@ import {
   calculateCompositeScores,
   simulateMultiFailure,
   getMitigationRecommendations,
+  queryNodeRiskAndImpact,
 } from "../services/riskService";
 
 const RiskAnalysis = () => {
@@ -17,6 +18,11 @@ const RiskAnalysis = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // NLP Query States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [queryLoading, setQueryLoading] = useState(false);
+  const [nlpAnalysisResult, setNlpAnalysisResult] = useState(null);
 
   useEffect(() => {
     loadInitialData();
@@ -78,6 +84,63 @@ const RiskAnalysis = () => {
     }
   };
 
+  // Natural Language Query Handler
+  const handleNLPSubmit = async (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    try {
+      setQueryLoading(true);
+      const response = await queryNodeRiskAndImpact(searchQuery, 4);
+      setNlpAnalysisResult(response);
+
+      // Prepend/Inject customized mitigation card to recommendations tab
+      if (response.mitigation_plan) {
+        const customPlan = {
+          entity: response.matched_entity,
+          risk_level: response.mitigation_plan.risk_level,
+          vulnerabilities: response.mitigation_plan.vulnerabilities,
+          recommended_actions: response.mitigation_plan.recommended_actions,
+        };
+
+        setRecommendations((prev) => [
+          customPlan,
+          ...prev.filter((p) => p.entity.id !== response.matched_entity.id),
+        ]);
+      }
+
+     // Populate failure simulator state with cascade results
+      if (response.cascade_simulation) {
+        const cascade = response.cascade_simulation;
+        const affectedList = cascade.affected_nodes || [];
+        const totalCount = cascade.blast_radius_count ?? cascade.combined_blast_radius_count ?? affectedList.length;
+
+        const formattedAffected = affectedList.map((n) => ({
+          id: n.id,
+          name: n.name,
+          type: n.type || "Component",
+          composite_risk_score: n.composite_risk_score ?? "N/A",
+          depth: n.depth ?? n.hop ?? 1,
+        }));
+
+        setSimulationResult({
+          combined_blast_radius_count: totalCount,
+          affected_nodes: formattedAffected,
+        });
+
+        // Auto-select matched entity in multi-node selector
+        if (!selectedNodeIds.includes(response.matched_entity.id)) {
+          setSelectedNodeIds([response.matched_entity.id]);
+        }
+      }
+    } catch (err) {
+      console.error("NLP Query Error:", err);
+      alert(err.response?.data?.detail || "Failed to process query.");
+    } finally {
+      setQueryLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ padding: "24px", color: "#4b5563", fontWeight: "500" }}>
@@ -99,7 +162,7 @@ const RiskAnalysis = () => {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
         <div>
-          <h2 style={{ fontSize: "24px", fontWeight: "bold", color: "#ffffff !important", margin: 0 }}>
+          <h2 style={{ fontSize: "24px", fontWeight: "bold", color: "#ffffff", margin: 0 }}>
             Risk Intelligence & Decision Support
           </h2>
           <p style={{ fontSize: "14px", color: "#94a3b8", margin: "4px 0 0 0" }}>
@@ -122,6 +185,98 @@ const RiskAnalysis = () => {
         >
           {actionLoading ? "Processing..." : "Recalculate Metrics"}
         </button>
+      </div>
+
+      {/* NLP Query Input Bar */}
+      <div style={{ backgroundColor: "#1e293b", padding: "16px", borderRadius: "8px", border: "1px solid #334155", marginBottom: "20px" }}>
+        <form onSubmit={handleNLPSubmit} style={{ display: "flex", gap: "10px" }}>
+          <input
+            type="text"
+            placeholder="Ask AI e.g.: 'What happens if Delta Lake fails?' or 'Analyze risk for Sales'"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              flex: 1,
+              backgroundColor: "#0f172a",
+              border: "1px solid #475569",
+              color: "#f8fafc",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              fontSize: "14px",
+              outline: "none",
+            }}
+          />
+          <button
+            type="submit"
+            disabled={queryLoading}
+            style={{
+              backgroundColor: "#2563eb",
+              color: "white",
+              fontWeight: "600",
+              padding: "10px 20px",
+              borderRadius: "6px",
+              border: "none",
+              cursor: queryLoading ? "not-allowed" : "pointer",
+              opacity: queryLoading ? 0.7 : 1,
+            }}
+          >
+            {queryLoading ? "Analyzing..." : "Ask AI"}
+          </button>
+        </form>
+
+        {/* NLP Result Summary Banner */}
+        {nlpAnalysisResult && (
+          <div
+            style={{
+              marginTop: "12px",
+              padding: "12px 16px",
+              borderRadius: "6px",
+              backgroundColor: "#0f172a",
+              border: "1px solid #3b82f6",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "8px",
+            }}
+          >
+            <div style={{ fontSize: "14px", color: "#e2e8f0" }}>
+              Target Identified: <strong style={{ color: "#60a5fa" }}>{nlpAnalysisResult.matched_entity.name}</strong> ({nlpAnalysisResult.matched_entity.type}) | Composite Risk: <strong style={{ color: "#f87171" }}>{nlpAnalysisResult.matched_entity.composite_risk_score}</strong> | Downstream Blast Radius: <strong style={{ color: "#fbbf24" }}>{simulationResult?.combined_blast_radius_count || 0} nodes</strong>
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                type="button"
+                onClick={() => setActiveTab("simulator")}
+                style={{
+                  backgroundColor: "#334155",
+                  color: "#f8fafc",
+                  fontSize: "12px",
+                  padding: "4px 10px",
+                  borderRadius: "4px",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                View Outage Trace
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("recommendations")}
+                style={{
+                  backgroundColor: "#2563eb",
+                  color: "#ffffff",
+                  fontSize: "12px",
+                  padding: "4px 10px",
+                  borderRadius: "4px",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                View Mitigation Card
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -176,7 +331,7 @@ const RiskAnalysis = () => {
       {/* TAB 1: OVERVIEW */}
       {activeTab === "overview" && (
         <div style={{ backgroundColor: "#ffffff", borderRadius: "8px", border: "1px solid #e5e7eb", overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlignment: "left" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead style={{ backgroundColor: "#f9fafb" }}>
               <tr>
                 <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "12px", color: "#6b7280", textTransform: "uppercase" }}>Entity Name</th>
@@ -263,8 +418,8 @@ const RiskAnalysis = () => {
               padding: "10px 20px",
               borderRadius: "6px",
               border: "none",
-              cursor: (actionLoading || selectedNodeIds.length === 0) ? "not-allowed" : "pointer",
-              opacity: (actionLoading || selectedNodeIds.length === 0) ? 0.5 : 1,
+              cursor: actionLoading || selectedNodeIds.length === 0 ? "not-allowed" : "pointer",
+              opacity: actionLoading || selectedNodeIds.length === 0 ? 0.5 : 1,
             }}
           >
             {actionLoading ? "Simulating..." : "Run Cascade Simulation"}
@@ -279,7 +434,7 @@ const RiskAnalysis = () => {
               </div>
 
               <div style={{ overflowX: "auto", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", textAlignment: "left", fontSize: "14px" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "14px" }}>
                   <thead style={{ backgroundColor: "#f9fafb" }}>
                     <tr>
                       <th style={{ padding: "10px 16px", textAlign: "left", color: "#4b5563" }}>Affected Node</th>
@@ -289,8 +444,8 @@ const RiskAnalysis = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {simulationResult.affected_nodes.map((item) => (
-                      <tr key={item.id} style={{ borderTop: "1px solid #e5e7eb" }}>
+                    {simulationResult.affected_nodes.map((item, idx) => (
+                      <tr key={item.id || idx} style={{ borderTop: "1px solid #e5e7eb" }}>
                         <td style={{ padding: "10px 16px", fontWeight: "500", color: "#111827" }}>{item.name}</td>
                         <td style={{ padding: "10px 16px", color: "#4b5563" }}>{item.type}</td>
                         <td style={{ padding: "10px 16px", color: "#dc2626", fontWeight: "600" }}>{item.composite_risk_score}</td>

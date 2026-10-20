@@ -32,3 +32,12 @@ export const getMitigationRecommendations = async (limit = 5) => {
   const response = await api.get(`/risk-analysis/recommendations?limit=${limit}`);
   return response.data;
 };
+
+// NLP Natural Language Query Endpoint
+export const queryNodeRiskAndImpact = async (queryText, maxDepth = 4) => {
+  const response = await api.post('/risk-analysis/nlp-query', {
+    query: queryText,
+    max_depth: maxDepth
+  });
+  return response.data;
+};
