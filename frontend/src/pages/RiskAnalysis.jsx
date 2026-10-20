@@ -33,8 +33,8 @@ const RiskAnalysis = () => {
       setLoading(true);
       setError(null);
       const [criticalData, recData] = await Promise.all([
-        fetchCriticalRiskNodes(10),
-        getMitigationRecommendations(5),
+        fetchCriticalRiskNodes(50),
+        getMitigationRecommendations(10),
       ]);
       setCriticalNodes(criticalData.critical_nodes || []);
       setRecommendations(recData.mitigation_plans || []);

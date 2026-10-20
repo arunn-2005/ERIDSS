@@ -20,7 +20,7 @@ router = APIRouter(prefix="/risk-analysis", tags=["Risk Analysis"])
 
 @router.get("/critical-nodes")
 def fetch_critical_nodes(
-    limit: int = Query(10, ge=1, le=100),
+    limit: int = Query(10, ge=1, le=500),
     session: Session = Depends(get_neo4j_session)
 ):
     try:
